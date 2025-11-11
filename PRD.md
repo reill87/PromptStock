@@ -263,27 +263,37 @@
 ## 3. 기술 스택
 
 ### 3.1 프론트엔드
-- **프레임워크**: React 18 + Vite
+- **프레임워크**: React 19 + Expo (웹/iOS/Android 통합)
 - **언어**: TypeScript
-- **스타일링**: Tailwind CSS
+- **스타일링**: NativeWind (Tailwind CSS for React Native)
 - **상태관리**: Zustand (경량 상태관리)
-- **라우팅**: React Router v6
+- **라우팅**: Expo Router (파일 기반 라우팅)
 - **폼 관리**: React Hook Form
-- **이미지 처리**: browser-image-compression
+- **이미지 처리**: Expo Image Manipulator
 
-### 3.2 데이터 저장
-- **로컬 스토리지**: LocalStorage (설정, 간단한 데이터)
-- **이미지 저장**: IndexedDB (대용량 이미지)
+### 3.2 네이티브 기능
+- **이미지 선택**: Expo Image Picker
+- **클립보드**: Expo Clipboard
+- **파일 시스템**: Expo File System
+- **햅틱 피드백**: Expo Haptics
+- **아이콘**: @expo/vector-icons
+
+### 3.3 데이터 저장
+- **로컬 스토리지**: AsyncStorage (설정, 간단한 데이터)
+- **이미지 저장**: FileSystem + AsyncStorage
 - **백업**: JSON 내보내기/가져오기
 
-### 3.3 배포
-- **호스팅**: Vercel 또는 Netlify (무료 티어)
-- **도메인**: 무료 서브도메인 사용
+### 3.4 배포
+- **웹 호스팅**: Vercel 또는 Netlify (무료 티어)
+- **iOS**: App Store (EAS Build)
+- **Android**: Google Play Store (EAS Build)
+- **OTA 업데이트**: Expo Updates
 
-### 3.4 개발 도구
-- **번들러**: Vite
+### 3.5 개발 도구
+- **번들러**: Metro (Expo 기본)
 - **린터**: ESLint + Prettier
 - **타입체킹**: TypeScript strict mode
+- **빌드**: EAS Build (Expo Application Services)
 
 ---
 
@@ -532,33 +542,41 @@ interface UserSettings {
 ## 7. 구현 우선순위
 
 ### Phase 1 (MVP - Week 1-2)
-- [ ] 프로젝트 셋업 (React + TypeScript + Vite)
-- [ ] 기본 라우팅 구조
-- [ ] 이미지 업로드 기능
-- [ ] 5개 기본 템플릿 구현
+- [x] 타입 정의 완료 (template, analysis, common)
+- [x] 5개 기본 템플릿 데이터 작성
+- [ ] Expo 프로젝트 셋업 (React Native + TypeScript + Metro)
+- [ ] NativeWind 설정 및 기본 스타일
+- [ ] Expo Router 라우팅 구조 (탭 네비게이션)
+- [ ] 이미지 업로드 기능 (Expo Image Picker)
 - [ ] 프롬프트 생성 로직
-- [ ] 클립보드 복사 기능
+- [ ] 클립보드 복사 기능 (Expo Clipboard)
 
 ### Phase 2 (Week 3-4)
-- [ ] LocalStorage 히스토리 저장
-- [ ] 히스토리 조회/삭제 UI
+- [ ] AsyncStorage 히스토리 저장
+- [ ] 히스토리 조회/삭제 UI (FlatList 사용)
 - [ ] 템플릿 커스터마이징 기능
 - [ ] 태그 시스템
-- [ ] 반응형 디자인
+- [ ] 웹/iOS/Android 반응형 디자인
+- [ ] 햅틱 피드백 추가
 
 ### Phase 3 (Week 5-6)
-- [ ] IndexedDB 이미지 저장 최적화
+- [ ] 이미지 저장 최적화 (FileSystem + AsyncStorage)
 - [ ] 검색 필터링
-- [ ] 데이터 내보내기/가져오기
+- [ ] 데이터 내보내기/가져오기 (FileSystem)
 - [ ] 사용자 설정 페이지
 - [ ] 도움말/튜토리얼
+- [ ] iOS/Android 빌드 테스트
 
-### Phase 4 (향후 개선)
+### Phase 4 (배포 및 향후 개선)
+- [ ] 웹 배포 (Vercel/Netlify)
+- [ ] iOS 앱스토어 출시 (TestFlight → App Store)
+- [ ] Android 플레이스토어 출시 (내부 테스트 → 프로덕션)
+- [ ] OTA 업데이트 설정
 - [ ] 커뮤니티 템플릿 마켓플레이스
 - [ ] OCR로 종목명 자동 추출
 - [ ] 프롬프트 체인 기능
 - [ ] 다크모드
-- [ ] PWA 지원 (오프라인 사용)
+- [ ] 푸시 알림 (실적 발표 알림 등)
 
 ---
 
@@ -766,10 +784,19 @@ interface UserSettings {
 - 캘린더 연동 (실적 발표일 알림)
 - 유튜브 API (관련 분석 영상 추천)
 
-### 11.4 수익화 (훗날)
+### 11.4 모바일 앱 전용 기능
+- 카메라 직접 촬영 (증권 앱 화면 바로 찍기)
+- 푸시 알림 (실적 발표일, 배당 기준일 등)
+- 위젯 (최근 분석 결과 요약)
+- 앱 아이콘 뱃지 (새로운 이벤트 알림)
+- Face ID/Touch ID 보안
+- 오프라인 모드 (네트워크 없이도 프롬프트 생성)
+
+### 11.5 수익화 (훗날)
 - 프리미엄 템플릿 판매
 - 고급 분석 기능 구독제
 - 광고 (증권사 제휴)
+- 앱 내 구매 (추가 스토리지, 무제한 히스토리)
 
 ---
 
@@ -802,95 +829,125 @@ interface UserSettings {
 
 ```
 portfolio-prompt-helper/
-├── public/
-│   ├── favicon.ico
-│   └── templates/
-│       └── default-templates.json
-├── src/
-│   ├── components/
-│   │   ├── common/
-│   │   │   ├── Button.tsx
-│   │   │   ├── Modal.tsx
-│   │   │   └── Toast.tsx
-│   │   ├── upload/
-│   │   │   ├── ImageUploader.tsx
-│   │   │   └── ImagePreview.tsx
-│   │   ├── template/
-│   │   │   ├── TemplateCard.tsx
-│   │   │   ├── TemplateList.tsx
-│   │   │   └── TemplateEditor.tsx
-│   │   ├── prompt/
-│   │   │   ├── PromptPreview.tsx
-│   │   │   └── CopyButton.tsx
-│   │   └── history/
-│   │       ├── HistoryList.tsx
-│   │       ├── HistoryItem.tsx
-│   │       └── HistoryDetail.tsx
-│   ├── pages/
-│   │   ├── Home.tsx
-│   │   ├── NewAnalysis.tsx
-│   │   ├── History.tsx
-│   │   └── Settings.tsx
-│   ├── hooks/
-│   │   ├── useImageUpload.ts
-│   │   ├── useTemplates.ts
-│   │   ├── useHistory.ts
-│   │   └── useClipboard.ts
-│   ├── store/
-│   │   ├── analysisStore.ts
-│   │   ├── templateStore.ts
-│   │   └── settingsStore.ts
-│   ├── utils/
-│   │   ├── imageCompression.ts
-│   │   ├── promptGenerator.ts
-│   │   ├── storage.ts
-│   │   └── dateFormatter.ts
-│   ├── types/
-│   │   ├── template.ts
-│   │   ├── analysis.ts
-│   │   └── common.ts
-│   ├── constants/
-│   │   └── templates.ts
-│   ├── App.tsx
-│   ├── main.tsx
-│   └── index.css
-├── package.json
-├── vite.config.ts
+├── app/                          # Expo Router (파일 기반 라우팅)
+│   ├── (tabs)/                   # 탭 네비게이션 그룹
+│   │   ├── _layout.tsx          # 탭 레이아웃 설정
+│   │   ├── index.tsx            # 홈 화면 (/)
+│   │   ├── history.tsx          # 히스토리 (/history)
+│   │   └── settings.tsx         # 설정 (/settings)
+│   ├── analysis/
+│   │   └── new.tsx              # 새 분석 (/analysis/new)
+│   ├── _layout.tsx              # 루트 레이아웃
+│   └── +not-found.tsx           # 404 페이지
+├── components/
+│   ├── common/
+│   │   ├── Button.tsx
+│   │   ├── Modal.tsx
+│   │   ├── Toast.tsx
+│   │   └── Card.tsx
+│   ├── upload/
+│   │   ├── ImageUploader.tsx   # Expo Image Picker 사용
+│   │   └── ImagePreview.tsx
+│   ├── template/
+│   │   ├── TemplateCard.tsx
+│   │   ├── TemplateList.tsx
+│   │   └── TemplateEditor.tsx
+│   ├── prompt/
+│   │   ├── PromptPreview.tsx
+│   │   └── CopyButton.tsx      # Expo Clipboard 사용
+│   └── history/
+│       ├── HistoryList.tsx
+│       ├── HistoryItem.tsx
+│       └── HistoryDetail.tsx
+├── hooks/
+│   ├── useImageUpload.ts       # Expo APIs 활용
+│   ├── useTemplates.ts
+│   ├── useHistory.ts           # AsyncStorage 활용
+│   └── useClipboard.ts         # Expo Clipboard 활용
+├── store/
+│   ├── analysisStore.ts
+│   ├── templateStore.ts
+│   └── settingsStore.ts
+├── utils/
+│   ├── imageCompression.ts     # Expo Image Manipulator
+│   ├── promptGenerator.ts
+│   ├── storage.ts              # AsyncStorage 래퍼
+│   └── dateFormatter.ts
+├── types/
+│   ├── template.ts
+│   ├── analysis.ts
+│   └── common.ts
+├── constants/
+│   ├── templates.ts
+│   └── colors.ts
+├── assets/                      # 이미지, 폰트 등
+│   ├── images/
+│   │   ├── icon.png
+│   │   ├── splash.png
+│   │   └── adaptive-icon.png
+│   └── fonts/
+├── app.json                     # Expo 설정
+├── metro.config.js             # Metro bundler 설정
+├── babel.config.js             # Babel 설정
+├── global.css                  # NativeWind 스타일
+├── tailwind.config.js          # NativeWind 설정
 ├── tsconfig.json
-└── tailwind.config.js
+└── package.json
 ```
 
 ---
 
-## 14. Claude Code 구현 가이드
+## 14. Expo 구현 가이드
 
 ### 14.1 시작 명령어
 ```bash
-# 프로젝트 초기화
-npm create vite@latest portfolio-prompt-helper -- --template react-ts
+# Expo 프로젝트 생성 (Tabs 템플릿)
+npx create-expo-app@latest portfolio-prompt-helper --template tabs
 cd portfolio-prompt-helper
-npm install
 
-# 필수 패키지 설치
-npm install react-router-dom zustand browser-image-compression
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
+# 필수 Expo 패키지 설치
+npx expo install expo-router expo-image-picker expo-image-manipulator expo-file-system expo-clipboard expo-haptics
+
+# AsyncStorage 설치
+npx expo install @react-native-async-storage/async-storage
+
+# NativeWind 설치
+npm install nativewind
+npm install --save-dev tailwindcss@3.3.2
+npx tailwindcss init
+
+# 기존 패키지 설치
+npm install zustand react-hook-form
+
+# 필수 네비게이션 패키지
+npx expo install react-native-safe-area-context react-native-screens react-native-gesture-handler react-native-reanimated
 
 # 개발 서버 실행
-npm run dev
+npx expo start
+
+# 웹으로 실행
+npx expo start --web
+
+# iOS 시뮬레이터 (Mac만 가능)
+npx expo start --ios
+
+# Android 에뮬레이터
+npx expo start --android
 ```
 
-### 14.2 구현 순서 (Claude Code)
-1. **Step 1**: `src/types/` 폴더에 타입 정의 파일 생성
-2. **Step 2**: `src/constants/templates.ts`에 5개 기본 템플릿 데이터 작성
-3. **Step 3**: `src/utils/promptGenerator.ts`에 프롬프트 생성 로직 구현
-4. **Step 4**: `src/components/upload/ImageUploader.tsx` 컴포넌트 구현
-5. **Step 5**: `src/components/template/TemplateList.tsx` 컴포넌트 구현
-6. **Step 6**: `src/components/prompt/PromptPreview.tsx` 컴포넌트 구현
-7. **Step 7**: `src/pages/NewAnalysis.tsx` 메인 플로우 페이지 구현
-8. **Step 8**: `src/utils/storage.ts`로 LocalStorage 히스토리 기능 구현
-9. **Step 9**: `src/pages/History.tsx` 히스토리 페이지 구현
-10. **Step 10**: 스타일링 및 반응형 디자인 완성
+### 14.2 구현 순서
+1. **Step 1**: NativeWind 설정 (`tailwind.config.js`, `metro.config.js`, `global.css`)
+2. **Step 2**: `types/` 폴더에 타입 정의 파일 생성 (기존 유지)
+3. **Step 3**: `constants/templates.ts`에 5개 기본 템플릿 데이터 작성 (기존 유지)
+4. **Step 4**: `app/(tabs)/_layout.tsx`에 탭 네비게이션 설정
+5. **Step 5**: `components/upload/ImageUploader.tsx` - Expo Image Picker 사용
+6. **Step 6**: `components/template/TemplateList.tsx` - NativeWind 스타일링
+7. **Step 7**: `components/prompt/PromptPreview.tsx` - NativeWind 스타일링
+8. **Step 8**: `app/(tabs)/index.tsx` - 홈 화면 구현
+9. **Step 9**: `app/analysis/new.tsx` - 새 분석 플로우 구현
+10. **Step 10**: `utils/storage.ts` - AsyncStorage 히스토리 기능
+11. **Step 11**: `app/(tabs)/history.tsx` - 히스토리 화면 구현
+12. **Step 12**: `app/(tabs)/settings.tsx` - 설정 화면 구현
 
 ### 14.3 주요 함수 시그니처
 ```typescript
@@ -901,22 +958,53 @@ export function generatePrompt(
   customInputs?: Record<string, string>
 ): string;
 
-// utils/storage.ts
-export function saveAnalysis(analysis: Analysis): void;
-export function getAnalyses(): Analysis[];
-export function deleteAnalysis(id: string): void;
+// utils/storage.ts (AsyncStorage 사용)
+export async function saveAnalysis(analysis: Analysis): Promise<void>;
+export async function getAnalyses(): Promise<Analysis[]>;
+export async function deleteAnalysis(id: string): Promise<void>;
 
-// utils/imageCompression.ts
+// utils/imageCompression.ts (Expo Image Manipulator 사용)
 export async function compressImage(
-  file: File,
-  maxSizeMB: number
+  uri: string,
+  maxWidth: number
 ): Promise<string>; // returns base64
 
-// hooks/useClipboard.ts
+// hooks/useClipboard.ts (Expo Clipboard 사용)
 export function useClipboard(): {
-  copy: (text: string, image?: string) => Promise<boolean>;
+  copy: (text: string) => Promise<boolean>;
   copied: boolean;
 };
+
+// hooks/useImageUpload.ts (Expo Image Picker 사용)
+export function useImageUpload(): {
+  pickImages: () => Promise<string[]>;
+  takePhoto: () => Promise<string | null>;
+  loading: boolean;
+};
+```
+
+### 14.4 플랫폼별 빌드
+```bash
+# EAS CLI 설치 (처음 한 번만)
+npm install -g eas-cli
+
+# EAS 로그인
+eas login
+
+# 빌드 설정 생성
+eas build:configure
+
+# 웹 빌드 및 배포
+npx expo export:web
+
+# iOS 빌드 (TestFlight)
+eas build --platform ios
+
+# Android 빌드 (내부 테스트)
+eas build --platform android
+
+# 모두 빌드
+eas build --platform all
 ```
 
 ---
@@ -954,19 +1042,28 @@ export function useClipboard(): {
 ## 16. FAQ
 
 ### Q1: 왜 백엔드 없이 프론트엔드만 구현하나요?
-A: 비용을 최소화하고, 사용자의 데이터를 서버에 저장하지 않아 프라이버시를 보장하기 위함입니다. 모든 데이터는 사용자의 브라우저에만 저장됩니다.
+A: 비용을 최소화하고, 사용자의 데이터를 서버에 저장하지 않아 프라이버시를 보장하기 위함입니다. 모든 데이터는 사용자의 디바이스에만 저장됩니다 (AsyncStorage).
 
-### Q2: 이미지를 LocalStorage에 저장하면 용량 문제가 있지 않나요?
-A: 맞습니다. 따라서 Phase 2에서 IndexedDB로 마이그레이션할 예정입니다. LocalStorage는 5-10MB 제한이 있지만, IndexedDB는 수백 MB까지 저장 가능합니다.
+### Q2: Expo를 선택한 이유는?
+A: 하나의 코드베이스로 웹, iOS, Android를 모두 지원할 수 있어 개발 효율이 높습니다. 또한 이미지 처리, 파일 시스템, 클립보드 등 네이티브 API를 쉽게 사용할 수 있으며, EAS Build로 간편하게 앱스토어 배포가 가능합니다.
 
-### Q3: 프롬프트 품질을 어떻게 보장하나요?
+### Q3: 이미지를 AsyncStorage에 저장하면 용량 문제가 있지 않나요?
+A: AsyncStorage는 대용량 데이터 저장에 적합하지 않아, 이미지는 Expo FileSystem을 사용해 디바이스 파일 시스템에 저장하고, AsyncStorage에는 파일 경로만 저장합니다. 이를 통해 수백 MB의 이미지도 관리할 수 있습니다.
+
+### Q4: 프롬프트 품질을 어떻게 보장하나요?
 A: 실제 사용자 피드백을 기반으로 템플릿을 지속적으로 개선합니다. 또한 커뮤니티에서 검증된 템플릿을 추가할 예정입니다.
 
-### Q4: 다른 언어 지원 계획은?
-A: MVP는 한국어만 지원하며, 추후 영어 등 다국어 지원을 고려할 수 있습니다.
+### Q5: 다른 언어 지원 계획은?
+A: MVP는 한국어만 지원하며, 추후 영어 등 다국어 지원을 고려할 수 있습니다. Expo는 i18n 라이브러리와 쉽게 통합 가능합니다.
 
-### Q5: 모바일 앱 출시 계획은?
-A: 당장은 없습니다. 반응형 웹으로 모바일 브라우저에서도 사용 가능하며, PWA로 앱처럼 사용할 수 있도록 개선할 예정입니다.
+### Q6: 모바일 앱 출시 일정은?
+A: Week 4에 웹/iOS/Android 동시 출시를 목표로 합니다. iOS는 TestFlight 베타 테스트 후 App Store, Android는 내부 테스트 후 Google Play Store에 출시할 예정입니다.
+
+### Q7: NativeWind와 기존 Tailwind CSS의 차이는?
+A: NativeWind는 Tailwind CSS의 문법을 React Native에서 사용할 수 있게 해주는 라이브러리입니다. 대부분의 Tailwind 클래스를 그대로 사용할 수 있지만, `hover:`는 `active:`로 사용하고, 모든 텍스트는 `<Text>` 컴포넌트로 감싸야 합니다.
+
+### Q8: 앱 업데이트는 어떻게 하나요?
+A: 코드 변경은 Expo OTA(Over-The-Air) 업데이트로 앱스토어 심사 없이 즉시 배포할 수 있습니다. 네이티브 코드 변경이나 앱 설정 변경 시에만 앱스토어 재배포가 필요합니다.
 
 ---
 
@@ -978,15 +1075,33 @@ A: 당장은 없습니다. 반응형 웹으로 모바일 브라우저에서도 �
 - Portfolio Management Apps
 
 ### 17.2 기술 문서
-- React 공식 문서: https://react.dev
-- Vite 공식 문서: https://vitejs.dev
+
+#### Expo
+- Expo 공식 문서: https://docs.expo.dev
+- Expo Router: https://docs.expo.dev/router/introduction/
+- Expo Image Picker: https://docs.expo.dev/versions/latest/sdk/imagepicker/
+- Expo Image Manipulator: https://docs.expo.dev/versions/latest/sdk/imagemanipulator/
+- Expo Clipboard: https://docs.expo.dev/versions/latest/sdk/clipboard/
+- Expo File System: https://docs.expo.dev/versions/latest/sdk/filesystem/
+- EAS Build: https://docs.expo.dev/build/introduction/
+
+#### React Native & 스타일링
+- React Native 공식 문서: https://reactnative.dev
+- NativeWind: https://www.nativewind.dev
 - Tailwind CSS: https://tailwindcss.com
-- IndexedDB API: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API
+- AsyncStorage: https://react-native-async-storage.github.io/async-storage/
+
+#### 상태관리 & 유틸리티
+- Zustand: https://zustand-demo.pmnd.rs
+- React Hook Form: https://react-hook-form.com
+- React 공식 문서: https://react.dev
 
 ### 17.3 디자인 참고
 - Dribbble - Portfolio Dashboard
 - Behance - Financial Apps
 - Material Design - Data Visualization
+- iOS Human Interface Guidelines
+- Material Design 3 (Android)
 
 ---
 
@@ -1034,7 +1149,17 @@ export const DEFAULT_TEMPLATES: Template[] = [
 
 ---
 
-**문서 버전**: 1.0
-**최종 수정일**: 2025-10-23
+**문서 버전**: 2.0 (Expo + React Native Web 전환)
+**최종 수정일**: 2025-11-11
 **작성자**: Product Owner
 **검토자**: Tech Lead
+
+## 주요 변경사항 (v2.0)
+- ✅ Vite → Expo + Metro bundler 전환
+- ✅ React Router → Expo Router (파일 기반 라우팅)
+- ✅ Tailwind CSS → NativeWind
+- ✅ LocalStorage → AsyncStorage
+- ✅ browser-image-compression → Expo Image Manipulator
+- ✅ 웹/iOS/Android 단일 코드베이스 지원
+- ✅ EAS Build 배포 프로세스 추가
+- ✅ 네이티브 앱 기능 추가 (카메라, 햅틱, 푸시 알림)
