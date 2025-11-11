@@ -8,6 +8,8 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { ToastContainer } from '@/components/common/Toast';
+import { Modal } from '@/components/common/Modal';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -55,6 +57,8 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
+      <ToastContainer />
+      <Modal />
     </ThemeProvider>
   );
 }
