@@ -2,17 +2,10 @@ export interface Analysis {
   id: string;
   createdAt: string;
   updatedAt: string;
-  templateId: string;
   templateName: string;
-  images: string[]; // base64 or IndexedDB keys
   generatedPrompt: string;
-  customPrompt?: string;
-  llmResponse?: string;
+  imageCount: number; // Number of images used
   userNote?: string;
   tags: string[];
-  metadata: {
-    stockCount?: number;
-    totalValue?: number;
-    extractedData?: Record<string, any>;
-  };
+  aiResponse?: string; // Optional AI response after using the prompt
 }

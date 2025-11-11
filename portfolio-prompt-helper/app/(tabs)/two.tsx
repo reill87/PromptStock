@@ -1,31 +1,223 @@
-import { StyleSheet } from 'react-native';
+import { View, Text, Pressable, Modal, TextInput } from 'react-native';
+import { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useHistory } from '@/hooks/useHistory';
+import { useAnalysisStore, getFilteredAnalyses } from '@/store/analysisStore';
+import { useUIStore } from '@/store/uiStore';
+import { HistoryList } from '@/components/history/HistoryList';
+import { HistoryDetail } from '@/components/history/HistoryDetail';
+import { Button } from '@/components/common/Button';
+import { Analysis } from '@/types';
 
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
+export default function HistoryScreen() {
+  const {
+    loading,
+    analyses,
+    loadAnalyses,
+    deleteFromHistory,
+    deleteMultiple,
+    updateHistory,
+  } = useHistory();
 
-export default function TabTwoScreen() {
+  const {
+    setAnalyses,
+    currentAnalysis,
+    setCurrentAnalysis,
+    filters,
+    setSearchQuery,
+    selectedIds,
+    toggleSelection,
+    selectAll,
+    clearSelection,
+  } = useAnalysisStore();
+
+  const showModal = useUIStore((state) => state.showModal);
+
+  const [showDetail, setShowDetail] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+
+  // Sync analyses from storage to store
+  useEffect(() => {
+    setAnalyses(analyses);
+  }, [analyses, setAnalyses]);
+
+  // Get filtered analyses
+  const filteredAnalyses = getFilteredAnalyses(analyses, filters);
+
+  const handleItemPress = (analysis: Analysis) => {
+    if (selectionMode) {
+      toggleSelection(analysis.id);
+    } else {
+      setCurrentAnalysis(analysis);
+      setShowDetail(true);
+    }
+  };
+
+  const handleDeleteItem = (id: string) => {
+    showModal(
+      '삭제 확인',
+      '이 히스토리를 삭제하시겠습니까?',
+      async () => {
+        await deleteFromHistory(id);
+      }
+    );
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedIds.length === 0) return;
+
+    showModal(
+      '삭제 확인',
+      `선택한 ${selectedIds.length}개의 히스토리를 삭제하시겠습니까?`,
+      async () => {
+        await deleteMultiple(selectedIds);
+        setSelectionMode(false);
+        clearSelection();
+      }
+    );
+  };
+
+  const handleUpdateAnalysis = async (id: string, updates: Partial<Analysis>) => {
+    await updateHistory(id, updates);
+    // Refresh current analysis if it's the one being updated
+    if (currentAnalysis?.id === id) {
+      setCurrentAnalysis({ ...currentAnalysis, ...updates });
+    }
+  };
+
+  const handleCloseDetail = () => {
+    setShowDetail(false);
+    setCurrentAnalysis(null);
+  };
+
+  const toggleSelectionMode = () => {
+    setSelectionMode(!selectionMode);
+    clearSelection();
+  };
+
+  const handleSelectAll = () => {
+    selectAll();
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Tab Two</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/two.tsx" />
+    <View className="flex-1 bg-gray-50">
+      {/* Header Actions */}
+      <View className="bg-white border-b border-gray-200 px-4 py-3">
+        <View className="flex-row items-center justify-between">
+          {/* Left side */}
+          <View className="flex-row items-center gap-3">
+            <Pressable
+              onPress={() => setShowSearch(!showSearch)}
+              className="p-2 -ml-2"
+            >
+              <Ionicons
+                name={showSearch ? 'search' : 'search-outline'}
+                size={24}
+                color="#3B82F6"
+              />
+            </Pressable>
+
+            {selectionMode && (
+              <Pressable onPress={handleSelectAll} className="p-2">
+                <Text className="text-blue-600 font-semibold">전체 선택</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Right side */}
+          <View className="flex-row items-center gap-3">
+            {selectionMode ? (
+              <>
+                <Text className="text-gray-600">
+                  {selectedIds.length}개 선택
+                </Text>
+                <Pressable
+                  onPress={handleDeleteSelected}
+                  disabled={selectedIds.length === 0}
+                  className="p-2"
+                >
+                  <Ionicons
+                    name="trash"
+                    size={24}
+                    color={selectedIds.length > 0 ? '#EF4444' : '#D1D5DB'}
+                  />
+                </Pressable>
+                <Pressable onPress={toggleSelectionMode} className="p-2">
+                  <Text className="text-blue-600 font-semibold">취소</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Pressable
+                onPress={toggleSelectionMode}
+                disabled={analyses.length === 0}
+                className="p-2 -mr-2"
+              >
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={24}
+                  color={analyses.length > 0 ? '#3B82F6' : '#D1D5DB'}
+                />
+              </Pressable>
+            )}
+          </View>
+        </View>
+
+        {/* Search Bar */}
+        {showSearch && (
+          <View className="mt-3">
+            <View className="flex-row items-center bg-gray-100 rounded-lg px-3 py-2">
+              <Ionicons name="search" size={20} color="#9CA3AF" />
+              <TextInput
+                placeholder="템플릿 또는 메모 검색..."
+                value={filters.searchQuery}
+                onChangeText={setSearchQuery}
+                className="flex-1 ml-2 text-gray-900"
+                placeholderTextColor="#9CA3AF"
+              />
+              {filters.searchQuery.length > 0 && (
+                <Pressable onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+                </Pressable>
+              )}
+            </View>
+          </View>
+        )}
+      </View>
+
+      {/* History List */}
+      <HistoryList
+        analyses={filteredAnalyses}
+        loading={loading}
+        onRefresh={loadAnalyses}
+        onItemPress={handleItemPress}
+        onItemDelete={handleDeleteItem}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelection}
+        showCheckbox={selectionMode}
+        emptyMessage={
+          filters.searchQuery
+            ? '검색 결과가 없습니다'
+            : '저장된 히스토리가 없습니다'
+        }
+      />
+
+      {/* Detail Modal */}
+      <Modal
+        visible={showDetail && currentAnalysis !== null}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCloseDetail}
+      >
+        {currentAnalysis && (
+          <HistoryDetail
+            analysis={currentAnalysis}
+            onClose={handleCloseDetail}
+            onUpdate={handleUpdateAnalysis}
+            onDelete={handleDeleteItem}
+          />
+        )}
+      </Modal>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
-});

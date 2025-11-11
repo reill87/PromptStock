@@ -1,5 +1,6 @@
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable } from 'react-native';
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
 import { useUIStore } from '@/store/uiStore';
@@ -8,6 +9,7 @@ import { ImagePreview } from '@/components/upload/ImagePreview';
 import { TemplateList } from '@/components/template/TemplateList';
 import { PromptPreview } from '@/components/prompt/PromptPreview';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import { useHistory } from '@/hooks/useHistory';
 import { DEFAULT_TEMPLATES } from '@/constants/templates';
 import { Template } from '@/types';
 import { generatePrompt } from '@/utils/promptGenerator';
@@ -16,8 +18,14 @@ export default function HomeScreen() {
   const showToast = useUIStore((state) => state.showToast);
   const showModal = useUIStore((state) => state.showModal);
   const { images, loading, pickImages, takePhoto, removeImage, clearImages } = useImageUpload();
+  const { saveToHistory, loading: savingToHistory } = useHistory();
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
+  const [showSaveForm, setShowSaveForm] = useState(false);
+  const [userNote, setUserNote] = useState('');
+  const [tagInput, setTagInput] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [isSaved, setIsSaved] = useState(false);
 
   const handleGeneratePrompt = () => {
     if (!selectedTemplate) {
@@ -35,7 +43,38 @@ export default function HomeScreen() {
     });
 
     setGeneratedPrompt(prompt);
+    setIsSaved(false);
     showToast('success', '프롬프트가 생성되었습니다!');
+  };
+
+  const handleAddTag = () => {
+    const trimmedTag = tagInput.trim();
+    if (trimmedTag && !tags.includes(trimmedTag)) {
+      setTags([...tags, trimmedTag]);
+      setTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter((tag) => tag !== tagToRemove));
+  };
+
+  const handleSaveToHistory = async () => {
+    if (!selectedTemplate || !generatedPrompt) return;
+
+    await saveToHistory({
+      templateName: selectedTemplate.name,
+      generatedPrompt: generatedPrompt,
+      imageCount: images.length,
+      userNote: userNote.trim() || undefined,
+      tags: tags,
+    });
+
+    setIsSaved(true);
+    setShowSaveForm(false);
+    setUserNote('');
+    setTags([]);
+    setTagInput('');
   };
 
   const handleReset = () => {
@@ -46,6 +85,11 @@ export default function HomeScreen() {
         clearImages();
         setSelectedTemplate(null);
         setGeneratedPrompt(null);
+        setShowSaveForm(false);
+        setUserNote('');
+        setTags([]);
+        setTagInput('');
+        setIsSaved(false);
         showToast('info', '초기화되었습니다');
       }
     );
@@ -129,6 +173,113 @@ export default function HomeScreen() {
               fullWidth
               className="mt-3"
             />
+
+            {/* Save to History Section */}
+            <Card variant="elevated" className="mt-4">
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-lg font-bold">히스토리 저장</Text>
+                {isSaved && (
+                  <View className="flex-row items-center">
+                    <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                    <Text className="text-sm text-green-600 ml-1">저장됨</Text>
+                  </View>
+                )}
+              </View>
+
+              {!isSaved && (
+                <>
+                  {!showSaveForm ? (
+                    <Button
+                      title="히스토리에 저장"
+                      variant="secondary"
+                      onPress={() => setShowSaveForm(true)}
+                      fullWidth
+                    />
+                  ) : (
+                    <View>
+                      {/* Note Input */}
+                      <Text className="text-sm font-semibold text-gray-700 mb-2">
+                        메모 (선택사항)
+                      </Text>
+                      <TextInput
+                        value={userNote}
+                        onChangeText={setUserNote}
+                        placeholder="이 분석에 대한 메모를 입력하세요"
+                        multiline
+                        numberOfLines={3}
+                        className="bg-gray-50 p-3 rounded-lg text-gray-900 mb-4"
+                        style={{ minHeight: 80, textAlignVertical: 'top' }}
+                      />
+
+                      {/* Tag Input */}
+                      <Text className="text-sm font-semibold text-gray-700 mb-2">
+                        태그 (선택사항)
+                      </Text>
+                      <View className="flex-row mb-3">
+                        <TextInput
+                          value={tagInput}
+                          onChangeText={setTagInput}
+                          placeholder="태그 입력 후 추가 버튼 클릭"
+                          onSubmitEditing={handleAddTag}
+                          className="flex-1 bg-gray-50 px-3 py-2 rounded-lg text-gray-900 mr-2"
+                        />
+                        <Pressable
+                          onPress={handleAddTag}
+                          className="bg-blue-100 px-4 py-2 rounded-lg items-center justify-center"
+                        >
+                          <Text className="text-blue-700 font-semibold">추가</Text>
+                        </Pressable>
+                      </View>
+
+                      {/* Tags Display */}
+                      {tags.length > 0 && (
+                        <View className="flex-row flex-wrap gap-2 mb-4">
+                          {tags.map((tag, index) => (
+                            <View
+                              key={index}
+                              className="bg-blue-100 px-3 py-2 rounded-full flex-row items-center"
+                            >
+                              <Text className="text-sm text-blue-700 mr-2">#{tag}</Text>
+                              <Pressable onPress={() => handleRemoveTag(tag)}>
+                                <Ionicons name="close-circle" size={16} color="#3B82F6" />
+                              </Pressable>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+
+                      {/* Action Buttons */}
+                      <View className="flex-row gap-2">
+                        <Button
+                          title="저장"
+                          variant="primary"
+                          onPress={handleSaveToHistory}
+                          loading={savingToHistory}
+                          fullWidth
+                        />
+                        <Button
+                          title="취소"
+                          variant="outline"
+                          onPress={() => {
+                            setShowSaveForm(false);
+                            setUserNote('');
+                            setTags([]);
+                            setTagInput('');
+                          }}
+                          fullWidth
+                        />
+                      </View>
+                    </View>
+                  )}
+                </>
+              )}
+
+              {isSaved && (
+                <Text className="text-sm text-gray-600 text-center">
+                  히스토리 탭에서 저장된 분석을 확인할 수 있습니다
+                </Text>
+              )}
+            </Card>
           </View>
         )}
 
