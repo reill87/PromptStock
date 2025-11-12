@@ -1,3 +1,4 @@
+import React, { useCallback, memo } from 'react';
 import { View, Text, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import { Analysis } from '@/types';
 import { HistoryItem } from './HistoryItem';
@@ -14,7 +15,7 @@ export interface HistoryListProps {
   emptyMessage?: string;
 }
 
-export function HistoryList({
+export const HistoryList = memo(function HistoryList({
   analyses,
   loading = false,
   onRefresh,
@@ -25,6 +26,30 @@ export function HistoryList({
   showCheckbox = false,
   emptyMessage = '저장된 히스토리가 없습니다',
 }: HistoryListProps) {
+  const keyExtractor = useCallback((item: Analysis) => item.id, []);
+
+  const renderItem = useCallback(
+    ({ item }: { item: Analysis }) => (
+      <HistoryItem
+        analysis={item}
+        onPress={onItemPress}
+        onDelete={onItemDelete}
+        selected={selectedIds.includes(item.id)}
+        onToggleSelect={onToggleSelect}
+        showCheckbox={showCheckbox}
+      />
+    ),
+    [onItemPress, onItemDelete, selectedIds, onToggleSelect, showCheckbox]
+  );
+
+  const getItemLayout = useCallback(
+    (_: any, index: number) => ({
+      length: 150, // Approximate item height
+      offset: 150 * index,
+      index,
+    }),
+    []
+  );
   // Empty state
   if (!loading && analyses.length === 0) {
     return (
@@ -43,17 +68,9 @@ export function HistoryList({
   return (
     <FlatList
       data={analyses}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <HistoryItem
-          analysis={item}
-          onPress={onItemPress}
-          onDelete={onItemDelete}
-          selected={selectedIds.includes(item.id)}
-          onToggleSelect={onToggleSelect}
-          showCheckbox={showCheckbox}
-        />
-      )}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
+      getItemLayout={getItemLayout}
       contentContainerStyle={{
         padding: 16,
         paddingBottom: 32,
@@ -76,6 +93,12 @@ export function HistoryList({
         ) : null
       }
       showsVerticalScrollIndicator={false}
+      // Performance optimizations
+      removeClippedSubviews={true}
+      maxToRenderPerBatch={10}
+      updateCellsBatchingPeriod={50}
+      initialNumToRender={10}
+      windowSize={5}
     />
   );
-}
+});

@@ -1,3 +1,4 @@
+import React, { useCallback, memo } from 'react';
 import { View, Text, Image, Pressable, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ImageAsset } from '@/hooks/useImageUpload';
@@ -8,7 +9,29 @@ interface ImagePreviewProps {
   onClear?: () => void;
 }
 
-export function ImagePreview({ images, onRemove, onClear }: ImagePreviewProps) {
+export const ImagePreview = memo(function ImagePreview({
+  images,
+  onRemove,
+  onClear
+}: ImagePreviewProps) {
+  const keyExtractor = useCallback((item: ImageAsset, index: number) =>
+    item.uri || index.toString(),
+    []
+  );
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: ImageAsset; index: number }) => (
+      <ImagePreviewItem
+        image={item}
+        index={index}
+        onRemove={() => onRemove(index)}
+      />
+    ),
+    [onRemove]
+  );
+
+  const renderSeparator = useCallback(() => <View className="w-3" />, []);
+
   if (images.length === 0) {
     return null;
   }
@@ -31,20 +54,18 @@ export function ImagePreview({ images, onRemove, onClear }: ImagePreviewProps) {
         data={images}
         horizontal
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(_, index) => index.toString()}
-        renderItem={({ item, index }) => (
-          <ImagePreviewItem
-            image={item}
-            index={index}
-            onRemove={() => onRemove(index)}
-          />
-        )}
-        ItemSeparatorComponent={() => <View className="w-3" />}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        ItemSeparatorComponent={renderSeparator}
         contentContainerClassName="pb-2"
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={5}
+        initialNumToRender={5}
+        windowSize={3}
       />
     </View>
   );
-}
+});
 
 interface ImagePreviewItemProps {
   image: ImageAsset;
@@ -52,13 +73,19 @@ interface ImagePreviewItemProps {
   onRemove: () => void;
 }
 
-function ImagePreviewItem({ image, index, onRemove }: ImagePreviewItemProps) {
+const ImagePreviewItem = memo(function ImagePreviewItem({
+  image,
+  index,
+  onRemove
+}: ImagePreviewItemProps) {
   return (
     <View className="relative">
       <Image
         source={{ uri: image.uri }}
         className="w-32 h-32 rounded-lg"
         resizeMode="cover"
+        // Enable caching for better performance
+        cache="force-cache"
       />
 
       {/* Remove Button */}
@@ -75,4 +102,4 @@ function ImagePreviewItem({ image, index, onRemove }: ImagePreviewItemProps) {
       </View>
     </View>
   );
-}
+});
