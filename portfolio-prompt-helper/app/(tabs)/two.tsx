@@ -8,6 +8,7 @@ import { HistoryList } from '@/components/history/HistoryList';
 import { HistoryDetail } from '@/components/history/HistoryDetail';
 import { TagFilter } from '@/components/history/TagFilter';
 import { DateRangeFilter } from '@/components/history/DateRangeFilter';
+import { SortOptions } from '@/components/history/SortOptions';
 import { Button } from '@/components/common/Button';
 import { Analysis } from '@/types';
 
@@ -29,6 +30,8 @@ export default function HistoryScreen() {
     setSearchQuery,
     setSelectedTags,
     setDateRange,
+    setSortBy,
+    setSortOrder,
     selectedIds,
     toggleSelection,
     selectAll,
@@ -42,6 +45,7 @@ export default function HistoryScreen() {
   const [showSearch, setShowSearch] = useState(false);
   const [showTagFilter, setShowTagFilter] = useState(false);
   const [showDateFilter, setShowDateFilter] = useState(false);
+  const [showSortOptions, setShowSortOptions] = useState(false);
 
   // Sync analyses from storage to store
   useEffect(() => {
@@ -188,17 +192,36 @@ export default function HistoryScreen() {
                 </Pressable>
               </>
             ) : (
-              <Pressable
-                onPress={toggleSelectionMode}
-                disabled={analyses.length === 0}
-                className="p-2 -mr-2"
-              >
-                <Ionicons
-                  name="checkmark-circle-outline"
-                  size={24}
-                  color={analyses.length > 0 ? '#3B82F6' : '#D1D5DB'}
-                />
-              </Pressable>
+              <>
+                <Pressable
+                  onPress={() => setShowSortOptions(!showSortOptions)}
+                  className="p-2 relative"
+                >
+                  <Ionicons
+                    name={
+                      filters.sortOrder === 'asc'
+                        ? 'arrow-up-circle-outline'
+                        : 'arrow-down-circle-outline'
+                    }
+                    size={24}
+                    color="#3B82F6"
+                  />
+                  {showSortOptions && (
+                    <View className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full w-2 h-2" />
+                  )}
+                </Pressable>
+                <Pressable
+                  onPress={toggleSelectionMode}
+                  disabled={analyses.length === 0}
+                  className="p-2 -mr-2"
+                >
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={24}
+                    color={analyses.length > 0 ? '#3B82F6' : '#D1D5DB'}
+                  />
+                </Pressable>
+              </>
             )}
           </View>
         </View>
@@ -242,6 +265,18 @@ export default function HistoryScreen() {
             startDate={filters.dateRange.startDate}
             endDate={filters.dateRange.endDate}
             onDateRangeChange={setDateRange}
+          />
+        </View>
+      )}
+
+      {/* Sort Options */}
+      {showSortOptions && (
+        <View className="bg-white border-b border-gray-200">
+          <SortOptions
+            sortBy={filters.sortBy}
+            sortOrder={filters.sortOrder}
+            onSortByChange={setSortBy}
+            onSortOrderChange={setSortOrder}
           />
         </View>
       )}
