@@ -17,9 +17,14 @@ export function TemplateCard({ template, onSelect, selected }: TemplateCardProps
           : 'border-gray-200 bg-white active:bg-gray-50'
       }`}
     >
-      {/* Icon */}
-      <View className="mb-3">
+      {/* Icon and Custom Badge */}
+      <View className="flex-row items-start justify-between mb-3">
         <Text className="text-4xl">{template.icon}</Text>
+        {template.isCustom && (
+          <View className="bg-purple-100 px-2 py-1 rounded">
+            <Text className="text-xs font-semibold text-purple-700">커스텀</Text>
+          </View>
+        )}
       </View>
 
       {/* Title */}

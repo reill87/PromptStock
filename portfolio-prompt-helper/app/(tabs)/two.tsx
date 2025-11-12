@@ -6,6 +6,10 @@ import { useAnalysisStore, getFilteredAnalyses } from '@/store/analysisStore';
 import { useUIStore } from '@/store/uiStore';
 import { HistoryList } from '@/components/history/HistoryList';
 import { HistoryDetail } from '@/components/history/HistoryDetail';
+import { TagFilter } from '@/components/history/TagFilter';
+import { DateRangeFilter } from '@/components/history/DateRangeFilter';
+import { SortOptions } from '@/components/history/SortOptions';
+import { TemplateTypeFilter } from '@/components/history/TemplateTypeFilter';
 import { Button } from '@/components/common/Button';
 import { Analysis } from '@/types';
 
@@ -25,6 +29,11 @@ export default function HistoryScreen() {
     setCurrentAnalysis,
     filters,
     setSearchQuery,
+    setSelectedTags,
+    setSelectedCategories,
+    setDateRange,
+    setSortBy,
+    setSortOrder,
     selectedIds,
     toggleSelection,
     selectAll,
@@ -36,6 +45,10 @@ export default function HistoryScreen() {
   const [showDetail, setShowDetail] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showTagFilter, setShowTagFilter] = useState(false);
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [showSortOptions, setShowSortOptions] = useState(false);
+  const [showTemplateTypeFilter, setShowTemplateTypeFilter] = useState(false);
 
   // Sync analyses from storage to store
   useEffect(() => {
@@ -118,6 +131,58 @@ export default function HistoryScreen() {
               />
             </Pressable>
 
+            <Pressable
+              onPress={() => setShowTagFilter(!showTagFilter)}
+              className="p-2 relative"
+            >
+              <Ionicons
+                name={showTagFilter ? 'pricetags' : 'pricetags-outline'}
+                size={24}
+                color="#3B82F6"
+              />
+              {filters.selectedTags.length > 0 && (
+                <View className="absolute -top-1 -right-1 bg-blue-500 rounded-full w-5 h-5 items-center justify-center">
+                  <Text className="text-xs font-bold text-white">
+                    {filters.selectedTags.length}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+
+            <Pressable
+              onPress={() => setShowDateFilter(!showDateFilter)}
+              className="p-2 relative"
+            >
+              <Ionicons
+                name={showDateFilter ? 'calendar' : 'calendar-outline'}
+                size={24}
+                color="#3B82F6"
+              />
+              {(filters.dateRange.startDate || filters.dateRange.endDate) && (
+                <View className="absolute -top-1 -right-1 bg-blue-500 rounded-full w-5 h-5 items-center justify-center">
+                  <Ionicons name="checkmark" size={12} color="#fff" />
+                </View>
+              )}
+            </Pressable>
+
+            <Pressable
+              onPress={() => setShowTemplateTypeFilter(!showTemplateTypeFilter)}
+              className="p-2 relative"
+            >
+              <Ionicons
+                name={showTemplateTypeFilter ? 'apps' : 'apps-outline'}
+                size={24}
+                color="#3B82F6"
+              />
+              {filters.selectedCategories.length > 0 && (
+                <View className="absolute -top-1 -right-1 bg-blue-500 rounded-full w-5 h-5 items-center justify-center">
+                  <Text className="text-xs font-bold text-white">
+                    {filters.selectedCategories.length}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+
             {selectionMode && (
               <Pressable onPress={handleSelectAll} className="p-2">
                 <Text className="text-blue-600 font-semibold">전체 선택</Text>
@@ -148,17 +213,36 @@ export default function HistoryScreen() {
                 </Pressable>
               </>
             ) : (
-              <Pressable
-                onPress={toggleSelectionMode}
-                disabled={analyses.length === 0}
-                className="p-2 -mr-2"
-              >
-                <Ionicons
-                  name="checkmark-circle-outline"
-                  size={24}
-                  color={analyses.length > 0 ? '#3B82F6' : '#D1D5DB'}
-                />
-              </Pressable>
+              <>
+                <Pressable
+                  onPress={() => setShowSortOptions(!showSortOptions)}
+                  className="p-2 relative"
+                >
+                  <Ionicons
+                    name={
+                      filters.sortOrder === 'asc'
+                        ? 'arrow-up-circle-outline'
+                        : 'arrow-down-circle-outline'
+                    }
+                    size={24}
+                    color="#3B82F6"
+                  />
+                  {showSortOptions && (
+                    <View className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full w-2 h-2" />
+                  )}
+                </Pressable>
+                <Pressable
+                  onPress={toggleSelectionMode}
+                  disabled={analyses.length === 0}
+                  className="p-2 -mr-2"
+                >
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={24}
+                    color={analyses.length > 0 ? '#3B82F6' : '#D1D5DB'}
+                  />
+                </Pressable>
+              </>
             )}
           </View>
         </View>
@@ -185,6 +269,49 @@ export default function HistoryScreen() {
         )}
       </View>
 
+      {/* Tag Filter */}
+      {showTagFilter && (
+        <View className="bg-white border-b border-gray-200">
+          <TagFilter
+            selectedTags={filters.selectedTags}
+            onTagsChange={setSelectedTags}
+          />
+        </View>
+      )}
+
+      {/* Date Range Filter */}
+      {showDateFilter && (
+        <View className="bg-white border-b border-gray-200">
+          <DateRangeFilter
+            startDate={filters.dateRange.startDate}
+            endDate={filters.dateRange.endDate}
+            onDateRangeChange={setDateRange}
+          />
+        </View>
+      )}
+
+      {/* Sort Options */}
+      {showSortOptions && (
+        <View className="bg-white border-b border-gray-200">
+          <SortOptions
+            sortBy={filters.sortBy}
+            sortOrder={filters.sortOrder}
+            onSortByChange={setSortBy}
+            onSortOrderChange={setSortOrder}
+          />
+        </View>
+      )}
+
+      {/* Template Type Filter */}
+      {showTemplateTypeFilter && (
+        <View className="bg-white border-b border-gray-200">
+          <TemplateTypeFilter
+            selectedCategories={filters.selectedCategories}
+            onCategoriesChange={setSelectedCategories}
+          />
+        </View>
+      )}
+
       {/* History List */}
       <HistoryList
         analyses={filteredAnalyses}
@@ -196,8 +323,12 @@ export default function HistoryScreen() {
         onToggleSelect={toggleSelection}
         showCheckbox={selectionMode}
         emptyMessage={
-          filters.searchQuery
-            ? '검색 결과가 없습니다'
+          filters.searchQuery ||
+          filters.selectedTags.length > 0 ||
+          filters.selectedCategories.length > 0 ||
+          filters.dateRange.startDate ||
+          filters.dateRange.endDate
+            ? '필터 조건에 맞는 히스토리가 없습니다'
             : '저장된 히스토리가 없습니다'
         }
       />
