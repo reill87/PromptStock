@@ -7,6 +7,7 @@ import { useUIStore } from '@/store/uiStore';
 import { HistoryList } from '@/components/history/HistoryList';
 import { HistoryDetail } from '@/components/history/HistoryDetail';
 import { TagFilter } from '@/components/history/TagFilter';
+import { DateRangeFilter } from '@/components/history/DateRangeFilter';
 import { Button } from '@/components/common/Button';
 import { Analysis } from '@/types';
 
@@ -27,6 +28,7 @@ export default function HistoryScreen() {
     filters,
     setSearchQuery,
     setSelectedTags,
+    setDateRange,
     selectedIds,
     toggleSelection,
     selectAll,
@@ -39,6 +41,7 @@ export default function HistoryScreen() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showTagFilter, setShowTagFilter] = useState(false);
+  const [showDateFilter, setShowDateFilter] = useState(false);
 
   // Sync analyses from storage to store
   useEffect(() => {
@@ -139,6 +142,22 @@ export default function HistoryScreen() {
               )}
             </Pressable>
 
+            <Pressable
+              onPress={() => setShowDateFilter(!showDateFilter)}
+              className="p-2 relative"
+            >
+              <Ionicons
+                name={showDateFilter ? 'calendar' : 'calendar-outline'}
+                size={24}
+                color="#3B82F6"
+              />
+              {(filters.dateRange.startDate || filters.dateRange.endDate) && (
+                <View className="absolute -top-1 -right-1 bg-blue-500 rounded-full w-5 h-5 items-center justify-center">
+                  <Ionicons name="checkmark" size={12} color="#fff" />
+                </View>
+              )}
+            </Pressable>
+
             {selectionMode && (
               <Pressable onPress={handleSelectAll} className="p-2">
                 <Text className="text-blue-600 font-semibold">전체 선택</Text>
@@ -216,6 +235,17 @@ export default function HistoryScreen() {
         </View>
       )}
 
+      {/* Date Range Filter */}
+      {showDateFilter && (
+        <View className="bg-white border-b border-gray-200">
+          <DateRangeFilter
+            startDate={filters.dateRange.startDate}
+            endDate={filters.dateRange.endDate}
+            onDateRangeChange={setDateRange}
+          />
+        </View>
+      )}
+
       {/* History List */}
       <HistoryList
         analyses={filteredAnalyses}
@@ -227,7 +257,10 @@ export default function HistoryScreen() {
         onToggleSelect={toggleSelection}
         showCheckbox={selectionMode}
         emptyMessage={
-          filters.searchQuery || filters.selectedTags.length > 0
+          filters.searchQuery ||
+          filters.selectedTags.length > 0 ||
+          filters.dateRange.startDate ||
+          filters.dateRange.endDate
             ? '필터 조건에 맞는 히스토리가 없습니다'
             : '저장된 히스토리가 없습니다'
         }

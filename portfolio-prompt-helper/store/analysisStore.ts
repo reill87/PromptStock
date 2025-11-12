@@ -4,6 +4,10 @@ import { Analysis } from '@/types';
 export interface AnalysisFilters {
   searchQuery: string;
   selectedTags: string[];
+  dateRange: {
+    startDate: string | null; // ISO date string
+    endDate: string | null; // ISO date string
+  };
   sortBy: 'date' | 'name';
   sortOrder: 'asc' | 'desc';
 }
@@ -25,6 +29,7 @@ interface AnalysisState {
   filters: AnalysisFilters;
   setSearchQuery: (query: string) => void;
   setSelectedTags: (tags: string[]) => void;
+  setDateRange: (startDate: string | null, endDate: string | null) => void;
   setSortBy: (sortBy: 'date' | 'name') => void;
   setSortOrder: (order: 'asc' | 'desc') => void;
   resetFilters: () => void;
@@ -40,6 +45,10 @@ interface AnalysisState {
 const initialFilters: AnalysisFilters = {
   searchQuery: '',
   selectedTags: [],
+  dateRange: {
+    startDate: null,
+    endDate: null,
+  },
   sortBy: 'date',
   sortOrder: 'desc',
 };
@@ -101,6 +110,14 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
       filters: { ...state.filters, selectedTags: tags },
     })),
 
+  setDateRange: (startDate, endDate) =>
+    set((state) => ({
+      filters: {
+        ...state.filters,
+        dateRange: { startDate, endDate },
+      },
+    })),
+
   setSortBy: (sortBy) =>
     set((state) => ({
       filters: { ...state.filters, sortBy },
@@ -157,6 +174,34 @@ export function getFilteredAnalyses(
     filtered = filtered.filter((a) =>
       filters.selectedTags.some((tag) => a.tags.includes(tag))
     );
+  }
+
+  // Apply date range filter
+  if (filters.dateRange.startDate || filters.dateRange.endDate) {
+    filtered = filtered.filter((a) => {
+      const analysisDate = new Date(a.createdAt);
+
+      // Reset time to start of day for comparison
+      analysisDate.setHours(0, 0, 0, 0);
+
+      if (filters.dateRange.startDate) {
+        const startDate = new Date(filters.dateRange.startDate);
+        startDate.setHours(0, 0, 0, 0);
+        if (analysisDate < startDate) {
+          return false;
+        }
+      }
+
+      if (filters.dateRange.endDate) {
+        const endDate = new Date(filters.dateRange.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        if (analysisDate > endDate) {
+          return false;
+        }
+      }
+
+      return true;
+    });
   }
 
   // Apply sorting
