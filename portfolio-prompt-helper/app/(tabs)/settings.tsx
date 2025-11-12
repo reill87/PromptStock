@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useSettingsStore, ImageQuality } from '@/store/settingsStore';
 import { DEFAULT_TEMPLATES } from '@/constants/templates';
 import { useUIStore } from '@/store/uiStore';
@@ -19,6 +20,7 @@ import {
   getDataSize,
 } from '@/utils/dataManagement';
 import { getStorageStats } from '@/utils/storage';
+import { getCustomTemplateStats } from '@/utils/templateStorage';
 
 export default function SettingsScreen() {
   const {
@@ -40,6 +42,7 @@ export default function SettingsScreen() {
     totalTags: 0,
     sizeInKB: 0,
   });
+  const [customTemplateCount, setCustomTemplateCount] = useState(0);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   useEffect(() => {
@@ -50,9 +53,10 @@ export default function SettingsScreen() {
   const loadDataStats = async () => {
     setIsLoadingStats(true);
     try {
-      const [storageStats, dataSize] = await Promise.all([
+      const [storageStats, dataSize, customStats] = await Promise.all([
         getStorageStats(),
         getDataSize(),
+        getCustomTemplateStats(),
       ]);
 
       setDataStats({
@@ -60,6 +64,7 @@ export default function SettingsScreen() {
         totalTags: storageStats.totalTags,
         sizeInKB: dataSize.sizeInKB,
       });
+      setCustomTemplateCount(customStats.totalCustom);
     } catch (error) {
       console.error('Error loading stats:', error);
     } finally {
@@ -171,7 +176,7 @@ export default function SettingsScreen() {
 
           <TouchableOpacity
             onPress={() => setDefaultTemplate(null)}
-            className="flex-row items-center justify-between py-3">
+            className="flex-row items-center justify-between py-3 border-b border-gray-100">
             <View className="flex-row items-center flex-1">
               <Ionicons name="close-circle-outline" size={24} color="#6B7280" />
               <Text className="text-sm font-medium text-gray-700 ml-3">
@@ -181,6 +186,24 @@ export default function SettingsScreen() {
             {defaultTemplateId === null && (
               <Ionicons name="checkmark-circle" size={22} color="#3B82F6" />
             )}
+          </TouchableOpacity>
+
+          {/* Custom Templates Management */}
+          <TouchableOpacity
+            onPress={() => router.push('/custom-templates')}
+            className="flex-row items-center justify-between py-4 mt-3 bg-blue-50 rounded-lg px-4">
+            <View className="flex-row items-center flex-1">
+              <Ionicons name="create-outline" size={24} color="#3B82F6" />
+              <View className="ml-3 flex-1">
+                <Text className="text-sm font-semibold text-blue-700">
+                  커스텀 템플릿 관리
+                </Text>
+                <Text className="text-xs text-blue-600 mt-0.5">
+                  나만의 프롬프트 템플릿 만들기 · {customTemplateCount}개 생성됨
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#3B82F6" />
           </TouchableOpacity>
         </View>
       </View>

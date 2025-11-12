@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, TextInput, Pressable } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
@@ -13,6 +13,7 @@ import { useHistory } from '@/hooks/useHistory';
 import { DEFAULT_TEMPLATES } from '@/constants/templates';
 import { Template } from '@/types';
 import { generatePrompt } from '@/utils/promptGenerator';
+import { getCustomTemplates } from '@/utils/templateStorage';
 
 export default function HomeScreen() {
   const showToast = useUIStore((state) => state.showToast);
@@ -26,6 +27,24 @@ export default function HomeScreen() {
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [isSaved, setIsSaved] = useState(false);
+  const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
+  const [allTemplates, setAllTemplates] = useState<Template[]>(DEFAULT_TEMPLATES);
+
+  // Load custom templates on mount
+  useEffect(() => {
+    loadCustomTemplates();
+  }, []);
+
+  const loadCustomTemplates = async () => {
+    try {
+      const customs = await getCustomTemplates();
+      setCustomTemplates(customs);
+      // Combine default and custom templates
+      setAllTemplates([...DEFAULT_TEMPLATES, ...customs]);
+    } catch (error) {
+      console.error('Error loading custom templates:', error);
+    }
+  };
 
   const handleGeneratePrompt = () => {
     if (!selectedTemplate) {
@@ -138,9 +157,18 @@ export default function HomeScreen() {
 
         {/* Step 2: Template Selection */}
         <Card variant="elevated" className="mb-4">
-          <Text className="text-xl font-bold mb-4">Step 2. 분석 템플릿 선택</Text>
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-xl font-bold">Step 2. 분석 템플릿 선택</Text>
+            {customTemplates.length > 0 && (
+              <View className="bg-blue-100 px-2 py-1 rounded">
+                <Text className="text-xs font-semibold text-blue-700">
+                  커스텀 {customTemplates.length}개 포함
+                </Text>
+              </View>
+            )}
+          </View>
           <TemplateList
-            templates={DEFAULT_TEMPLATES}
+            templates={allTemplates}
             selectedTemplateId={selectedTemplate?.id}
             onSelectTemplate={setSelectedTemplate}
           />
