@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const SETTINGS_KEY = '@portfolio_settings';
 
 export type ImageQuality = 'low' | 'medium' | 'high';
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 export interface AppSettings {
   // Template settings
@@ -11,6 +12,9 @@ export interface AppSettings {
 
   // Image settings
   imageQuality: ImageQuality;
+
+  // Theme settings
+  themeMode: ThemeMode;
 
   // App settings
   appVersion: string;
@@ -24,6 +28,7 @@ interface SettingsState extends AppSettings {
   // Actions
   setDefaultTemplate: (templateId: string | null) => Promise<void>;
   setImageQuality: (quality: ImageQuality) => Promise<void>;
+  setThemeMode: (mode: ThemeMode) => Promise<void>;
   setEnableHaptics: (enabled: boolean) => Promise<void>;
   setEnableAnalytics: (enabled: boolean) => Promise<void>;
   loadSettings: () => Promise<void>;
@@ -34,6 +39,7 @@ interface SettingsState extends AppSettings {
 const DEFAULT_SETTINGS: AppSettings = {
   defaultTemplateId: null,
   imageQuality: 'medium',
+  themeMode: 'system',
   appVersion: '1.0.0',
   enableHaptics: true,
   enableAnalytics: false,
@@ -49,6 +55,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   setImageQuality: async (quality) => {
     set({ imageQuality: quality });
+    await saveSettings(get());
+  },
+
+  setThemeMode: async (mode) => {
+    set({ themeMode: mode });
     await saveSettings(get());
   },
 
@@ -87,6 +98,7 @@ async function saveSettings(settings: Partial<AppSettings>): Promise<void> {
     const settingsToSave: AppSettings = {
       defaultTemplateId: settings.defaultTemplateId ?? DEFAULT_SETTINGS.defaultTemplateId,
       imageQuality: settings.imageQuality ?? DEFAULT_SETTINGS.imageQuality,
+      themeMode: settings.themeMode ?? DEFAULT_SETTINGS.themeMode,
       appVersion: settings.appVersion ?? DEFAULT_SETTINGS.appVersion,
       enableHaptics: settings.enableHaptics ?? DEFAULT_SETTINGS.enableHaptics,
       enableAnalytics: settings.enableAnalytics ?? DEFAULT_SETTINGS.enableAnalytics,
