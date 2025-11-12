@@ -6,6 +6,7 @@ import { useAnalysisStore, getFilteredAnalyses } from '@/store/analysisStore';
 import { useUIStore } from '@/store/uiStore';
 import { HistoryList } from '@/components/history/HistoryList';
 import { HistoryDetail } from '@/components/history/HistoryDetail';
+import { TagFilter } from '@/components/history/TagFilter';
 import { Button } from '@/components/common/Button';
 import { Analysis } from '@/types';
 
@@ -25,6 +26,7 @@ export default function HistoryScreen() {
     setCurrentAnalysis,
     filters,
     setSearchQuery,
+    setSelectedTags,
     selectedIds,
     toggleSelection,
     selectAll,
@@ -36,6 +38,7 @@ export default function HistoryScreen() {
   const [showDetail, setShowDetail] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showTagFilter, setShowTagFilter] = useState(false);
 
   // Sync analyses from storage to store
   useEffect(() => {
@@ -118,6 +121,24 @@ export default function HistoryScreen() {
               />
             </Pressable>
 
+            <Pressable
+              onPress={() => setShowTagFilter(!showTagFilter)}
+              className="p-2 relative"
+            >
+              <Ionicons
+                name={showTagFilter ? 'pricetags' : 'pricetags-outline'}
+                size={24}
+                color="#3B82F6"
+              />
+              {filters.selectedTags.length > 0 && (
+                <View className="absolute -top-1 -right-1 bg-blue-500 rounded-full w-5 h-5 items-center justify-center">
+                  <Text className="text-xs font-bold text-white">
+                    {filters.selectedTags.length}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+
             {selectionMode && (
               <Pressable onPress={handleSelectAll} className="p-2">
                 <Text className="text-blue-600 font-semibold">전체 선택</Text>
@@ -185,6 +206,16 @@ export default function HistoryScreen() {
         )}
       </View>
 
+      {/* Tag Filter */}
+      {showTagFilter && (
+        <View className="bg-white border-b border-gray-200">
+          <TagFilter
+            selectedTags={filters.selectedTags}
+            onTagsChange={setSelectedTags}
+          />
+        </View>
+      )}
+
       {/* History List */}
       <HistoryList
         analyses={filteredAnalyses}
@@ -196,8 +227,8 @@ export default function HistoryScreen() {
         onToggleSelect={toggleSelection}
         showCheckbox={selectionMode}
         emptyMessage={
-          filters.searchQuery
-            ? '검색 결과가 없습니다'
+          filters.searchQuery || filters.selectedTags.length > 0
+            ? '필터 조건에 맞는 히스토리가 없습니다'
             : '저장된 히스토리가 없습니다'
         }
       />
