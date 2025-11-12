@@ -1,9 +1,11 @@
 import { create } from 'zustand';
-import { Analysis } from '@/types';
+import { Analysis, TemplateCategory } from '@/types';
+import { DEFAULT_TEMPLATES } from '@/constants/templates';
 
 export interface AnalysisFilters {
   searchQuery: string;
   selectedTags: string[];
+  selectedCategories: TemplateCategory[];
   dateRange: {
     startDate: string | null; // ISO date string
     endDate: string | null; // ISO date string
@@ -29,6 +31,7 @@ interface AnalysisState {
   filters: AnalysisFilters;
   setSearchQuery: (query: string) => void;
   setSelectedTags: (tags: string[]) => void;
+  setSelectedCategories: (categories: TemplateCategory[]) => void;
   setDateRange: (startDate: string | null, endDate: string | null) => void;
   setSortBy: (sortBy: 'date' | 'name') => void;
   setSortOrder: (order: 'asc' | 'desc') => void;
@@ -45,6 +48,7 @@ interface AnalysisState {
 const initialFilters: AnalysisFilters = {
   searchQuery: '',
   selectedTags: [],
+  selectedCategories: [],
   dateRange: {
     startDate: null,
     endDate: null,
@@ -108,6 +112,11 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   setSelectedTags: (tags) =>
     set((state) => ({
       filters: { ...state.filters, selectedTags: tags },
+    })),
+
+  setSelectedCategories: (categories) =>
+    set((state) => ({
+      filters: { ...state.filters, selectedCategories: categories },
     })),
 
   setDateRange: (startDate, endDate) =>
@@ -174,6 +183,18 @@ export function getFilteredAnalyses(
     filtered = filtered.filter((a) =>
       filters.selectedTags.some((tag) => a.tags.includes(tag))
     );
+  }
+
+  // Apply category filter
+  if (filters.selectedCategories.length > 0) {
+    filtered = filtered.filter((a) => {
+      // Find the template by name
+      const template = DEFAULT_TEMPLATES.find((t) => t.name === a.templateName);
+      if (!template) return false;
+
+      // Check if template category matches any selected category
+      return filters.selectedCategories.includes(template.category);
+    });
   }
 
   // Apply date range filter
