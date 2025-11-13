@@ -18,7 +18,7 @@ import { getCustomTemplates } from '@/utils/templateStorage';
 export default function HomeScreen() {
   const showToast = useUIStore((state) => state.showToast);
   const showModal = useUIStore((state) => state.showModal);
-  const { images, loading, pickImages, takePhoto, removeImage, clearImages } = useImageUpload();
+  const { images, loading, pickImages, takePhoto, removeImage, clearImages, convertImagesToBase64 } = useImageUpload();
   const { saveToHistory, loading: savingToHistory } = useHistory();
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
@@ -81,19 +81,31 @@ export default function HomeScreen() {
   const handleSaveToHistory = async () => {
     if (!selectedTemplate || !generatedPrompt) return;
 
-    await saveToHistory({
-      templateName: selectedTemplate.name,
-      generatedPrompt: generatedPrompt,
-      imageCount: images.length,
-      userNote: userNote.trim() || undefined,
-      tags: tags,
-    });
+    try {
+      // Convert images to base64 for storage
+      const imageData = images.length > 0
+        ? await convertImagesToBase64(true)
+        : { images: [], thumbnails: [] };
 
-    setIsSaved(true);
-    setShowSaveForm(false);
-    setUserNote('');
-    setTags([]);
-    setTagInput('');
+      await saveToHistory({
+        templateName: selectedTemplate.name,
+        generatedPrompt: generatedPrompt,
+        imageCount: images.length,
+        images: imageData.images,
+        thumbnails: imageData.thumbnails,
+        userNote: userNote.trim() || undefined,
+        tags: tags,
+      });
+
+      setIsSaved(true);
+      setShowSaveForm(false);
+      setUserNote('');
+      setTags([]);
+      setTagInput('');
+    } catch (error) {
+      console.error('Error saving to history:', error);
+      showToast('error', '이미지 처리 중 오류가 발생했습니다');
+    }
   };
 
   const handleReset = () => {

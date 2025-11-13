@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, memo } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Analysis } from '@/types';
 import { Card } from '@/components/common/Card';
@@ -71,6 +71,16 @@ export const HistoryItem = memo(function HistoryItem({
     [analysis.tags.length]
   );
 
+  const visibleThumbnails = useMemo(
+    () => analysis.thumbnails?.slice(0, 3) || [],
+    [analysis.thumbnails]
+  );
+
+  const remainingImagesCount = useMemo(
+    () => Math.max(0, (analysis.thumbnails?.length || 0) - 3),
+    [analysis.thumbnails]
+  );
+
   return (
     <Card variant="elevated" className="mb-3">
       <View className="flex-row items-start">
@@ -93,6 +103,35 @@ export const HistoryItem = memo(function HistoryItem({
           onPress={handlePress}
           className="flex-1"
         >
+          {/* Thumbnails Preview */}
+          {visibleThumbnails.length > 0 && (
+            <View className="flex-row mb-3 gap-2">
+              {visibleThumbnails.map((thumbnail, index) => (
+                <View
+                  key={`${analysis.id}-thumb-${index}`}
+                  className="rounded-lg overflow-hidden border border-gray-200"
+                  style={{ width: 64, height: 64 }}
+                >
+                  <Image
+                    source={{ uri: thumbnail }}
+                    style={{ width: 64, height: 64 }}
+                    resizeMode="cover"
+                  />
+                </View>
+              ))}
+              {remainingImagesCount > 0 && (
+                <View
+                  className="rounded-lg bg-gray-100 items-center justify-center border border-gray-200"
+                  style={{ width: 64, height: 64 }}
+                >
+                  <Text className="text-sm font-bold text-gray-600">
+                    +{remainingImagesCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
           {/* Template name and date */}
           <View className="flex-row justify-between items-start mb-2">
             <View className="flex-1 mr-2">

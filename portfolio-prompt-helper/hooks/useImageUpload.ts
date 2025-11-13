@@ -166,6 +166,47 @@ export function useImageUpload() {
     showToast('info', '모든 이미지를 삭제했습니다');
   }, [showToast]);
 
+  /**
+   * Convert images to base64 for storage
+   * @param includeThumbnails - Generate small thumbnails for list view
+   */
+  const convertImagesToBase64 = useCallback(async (includeThumbnails: boolean = true) => {
+    try {
+      const base64Images: string[] = [];
+      const thumbnails: string[] = [];
+
+      for (const image of images) {
+        // Convert full image to base64
+        const fullImage = await compressAndConvert(image.uri, true);
+        if (fullImage.base64) {
+          base64Images.push(fullImage.base64);
+        }
+
+        // Generate thumbnail if requested
+        if (includeThumbnails) {
+          const thumbnail = await ImageManipulator.manipulateAsync(
+            image.uri,
+            [{ resize: { width: 128 } }],
+            {
+              compress: 0.5,
+              format: ImageManipulator.SaveFormat.JPEG
+            }
+          );
+
+          const thumbnailBase64 = await FileSystem.readAsStringAsync(thumbnail.uri, {
+            encoding: 'base64',
+          });
+          thumbnails.push(`data:image/jpeg;base64,${thumbnailBase64}`);
+        }
+      }
+
+      return { images: base64Images, thumbnails: includeThumbnails ? thumbnails : undefined };
+    } catch (error) {
+      console.error('Error converting images to base64:', error);
+      throw error;
+    }
+  }, [images, compressAndConvert]);
+
   return {
     images,
     loading,
@@ -174,5 +215,6 @@ export function useImageUpload() {
     removeImage,
     clearImages,
     setImages,
+    convertImagesToBase64,
   };
 }
