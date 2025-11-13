@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
+import { Platform } from 'react-native';
 import { useUIStore } from '@/store/uiStore';
 import { useSettingsStore } from '@/store/settingsStore';
 
@@ -61,10 +62,23 @@ export function useImageUpload() {
         // Convert to base64 only if needed (for storage)
         let base64: string | undefined;
         if (includeBase64) {
-          const base64String = await FileSystem.readAsStringAsync(manipulated.uri, {
-            encoding: 'base64',
-          });
-          base64 = `data:image/jpeg;base64,${base64String}`;
+          if (Platform.OS === 'web') {
+            // Web: use fetch and FileReader
+            const response = await fetch(manipulated.uri);
+            const blob = await response.blob();
+            base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          } else {
+            // Native: use FileSystem
+            const base64String = await FileSystem.readAsStringAsync(manipulated.uri, {
+              encoding: 'base64',
+            });
+            base64 = `data:image/jpeg;base64,${base64String}`;
+          }
         }
 
         return {
@@ -193,10 +207,25 @@ export function useImageUpload() {
             }
           );
 
-          const thumbnailBase64 = await FileSystem.readAsStringAsync(thumbnail.uri, {
-            encoding: 'base64',
-          });
-          thumbnails.push(`data:image/jpeg;base64,${thumbnailBase64}`);
+          let thumbnailBase64: string;
+          if (Platform.OS === 'web') {
+            // Web: use fetch and FileReader
+            const response = await fetch(thumbnail.uri);
+            const blob = await response.blob();
+            thumbnailBase64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          } else {
+            // Native: use FileSystem
+            const base64String = await FileSystem.readAsStringAsync(thumbnail.uri, {
+              encoding: 'base64',
+            });
+            thumbnailBase64 = `data:image/jpeg;base64,${base64String}`;
+          }
+          thumbnails.push(thumbnailBase64);
         }
       }
 
