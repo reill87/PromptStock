@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, TextInput } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Image, FlatList } from 'react-native';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Analysis } from '@/types';
@@ -106,6 +106,39 @@ export function HistoryDetail({
               )}
             </View>
           </Card>
+
+          {/* Image Gallery */}
+          {analysis.images && analysis.images.length > 0 && (
+            <Card variant="elevated" className="mb-4">
+              <Text className="text-base font-bold mb-3">
+                포트폴리오 이미지 ({analysis.images.length}장)
+              </Text>
+              <FlatList
+                data={analysis.images}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(_, index) => `image-${index}`}
+                renderItem={({ item, index }) => (
+                  <View
+                    className="mr-3 rounded-lg overflow-hidden border border-gray-200"
+                    style={{ width: 200, height: 200 }}
+                  >
+                    <Image
+                      source={{ uri: item }}
+                      style={{ width: 200, height: 200 }}
+                      resizeMode="cover"
+                    />
+                    <View className="absolute bottom-2 right-2 bg-black/60 px-2 py-1 rounded">
+                      <Text className="text-white text-xs font-semibold">
+                        {index + 1}/{analysis.images.length}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+                contentContainerStyle={{ paddingRight: 16 }}
+              />
+            </Card>
+          )}
 
           {/* Tags */}
           {analysis.tags.length > 0 && (
