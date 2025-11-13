@@ -1,3 +1,4 @@
+import React, { useMemo, useCallback, memo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Analysis } from '@/types';
@@ -12,7 +13,7 @@ export interface HistoryItemProps {
   showCheckbox?: boolean;
 }
 
-export function HistoryItem({
+export const HistoryItem = memo(function HistoryItem({
   analysis,
   onPress,
   onDelete,
@@ -20,8 +21,8 @@ export function HistoryItem({
   onToggleSelect,
   showCheckbox = false,
 }: HistoryItemProps) {
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const formattedDate = useMemo(() => {
+    const date = new Date(analysis.createdAt);
     const now = new Date();
     const diffInMs = now.getTime() - date.getTime();
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
@@ -39,12 +40,36 @@ export function HistoryItem({
         day: 'numeric',
       });
     }
-  };
+  }, [analysis.createdAt]);
 
-  const getTruncatedNote = (note?: string) => {
-    if (!note) return '메모 없음';
-    return note.length > 60 ? note.substring(0, 60) + '...' : note;
-  };
+  const truncatedNote = useMemo(() => {
+    if (!analysis.userNote) return '메모 없음';
+    return analysis.userNote.length > 60
+      ? analysis.userNote.substring(0, 60) + '...'
+      : analysis.userNote;
+  }, [analysis.userNote]);
+
+  const handlePress = useCallback(() => {
+    onPress(analysis);
+  }, [onPress, analysis]);
+
+  const handleDelete = useCallback(() => {
+    onDelete(analysis.id);
+  }, [onDelete, analysis.id]);
+
+  const handleToggleSelect = useCallback(() => {
+    onToggleSelect?.(analysis.id);
+  }, [onToggleSelect, analysis.id]);
+
+  const visibleTags = useMemo(
+    () => analysis.tags.slice(0, 3),
+    [analysis.tags]
+  );
+
+  const remainingTagsCount = useMemo(
+    () => Math.max(0, analysis.tags.length - 3),
+    [analysis.tags.length]
+  );
 
   return (
     <Card variant="elevated" className="mb-3">
@@ -52,7 +77,7 @@ export function HistoryItem({
         {/* Checkbox for selection */}
         {showCheckbox && (
           <Pressable
-            onPress={() => onToggleSelect?.(analysis.id)}
+            onPress={handleToggleSelect}
             className="mr-3 mt-1"
           >
             <Ionicons
@@ -65,7 +90,7 @@ export function HistoryItem({
 
         {/* Main content - pressable */}
         <Pressable
-          onPress={() => onPress(analysis)}
+          onPress={handlePress}
           className="flex-1"
         >
           {/* Template name and date */}
@@ -75,13 +100,13 @@ export function HistoryItem({
                 {analysis.templateName}
               </Text>
               <Text className="text-sm text-gray-500 mt-1">
-                {formatDate(analysis.createdAt)}
+                {formattedDate}
               </Text>
             </View>
 
             {/* Delete button */}
             <Pressable
-              onPress={() => onDelete(analysis.id)}
+              onPress={handleDelete}
               className="p-2 -m-2"
               hitSlop={8}
             >
@@ -92,18 +117,18 @@ export function HistoryItem({
           {/* Tags */}
           {analysis.tags.length > 0 && (
             <View className="flex-row flex-wrap gap-2 mb-2">
-              {analysis.tags.slice(0, 3).map((tag, index) => (
+              {visibleTags.map((tag, index) => (
                 <View
-                  key={index}
+                  key={`${analysis.id}-tag-${index}`}
                   className="bg-blue-100 px-2 py-1 rounded-full"
                 >
                   <Text className="text-xs text-blue-700">#{tag}</Text>
                 </View>
               ))}
-              {analysis.tags.length > 3 && (
+              {remainingTagsCount > 0 && (
                 <View className="bg-gray-100 px-2 py-1 rounded-full">
                   <Text className="text-xs text-gray-600">
-                    +{analysis.tags.length - 3}
+                    +{remainingTagsCount}
                   </Text>
                 </View>
               )}
@@ -112,7 +137,7 @@ export function HistoryItem({
 
           {/* User note preview */}
           <Text className="text-sm text-gray-600 leading-5">
-            {getTruncatedNote(analysis.userNote)}
+            {truncatedNote}
           </Text>
 
           {/* Bottom info */}
@@ -135,4 +160,4 @@ export function HistoryItem({
       </View>
     </Card>
   );
-}
+});

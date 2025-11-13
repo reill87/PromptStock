@@ -1,3 +1,4 @@
+import React, { memo, useMemo } from 'react';
 import { View, ViewProps, Pressable } from 'react-native';
 import { ReactNode } from 'react';
 
@@ -8,32 +9,31 @@ export interface CardProps extends ViewProps {
   onPress?: () => void;
 }
 
-export function Card({
+export const Card = memo(function Card({
   children,
   variant = 'default',
   padding = 'md',
   onPress,
   ...props
 }: CardProps) {
-  // Base styles
-  const baseClass = 'bg-white rounded-lg';
+  const cardClass = useMemo(() => {
+    const baseClass = 'bg-white rounded-lg';
 
-  // Variant styles
-  const variantClasses = {
-    default: 'border border-gray-200',
-    elevated: 'shadow-md',
-    outlined: 'border-2 border-gray-300',
-  };
+    const variantClasses = {
+      default: 'border border-gray-200',
+      elevated: 'shadow-md',
+      outlined: 'border-2 border-gray-300',
+    };
 
-  // Padding styles
-  const paddingClasses = {
-    none: '',
-    sm: 'p-2',
-    md: 'p-4',
-    lg: 'p-6',
-  };
+    const paddingClasses = {
+      none: '',
+      sm: 'p-2',
+      md: 'p-4',
+      lg: 'p-6',
+    };
 
-  const cardClass = `${baseClass} ${variantClasses[variant]} ${paddingClasses[padding]}`;
+    return `${baseClass} ${variantClasses[variant]} ${paddingClasses[padding]}`;
+  }, [variant, padding]);
 
   // If onPress is provided, use Pressable
   if (onPress) {
@@ -53,4 +53,4 @@ export function Card({
       {children}
     </View>
   );
-}
+});

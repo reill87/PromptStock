@@ -10,9 +10,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useSettingsStore, ImageQuality } from '@/store/settingsStore';
+import { useSettingsStore, ImageQuality, ThemeMode } from '@/store/settingsStore';
 import { DEFAULT_TEMPLATES } from '@/constants/templates';
 import { useUIStore } from '@/store/uiStore';
+import { useTheme } from '@/hooks/useTheme';
 import {
   exportData,
   importData,
@@ -36,6 +37,7 @@ export default function SettingsScreen() {
   } = useSettingsStore();
 
   const { showToast } = useUIStore();
+  const { themeMode, setTheme, isDark } = useTheme();
 
   const [dataStats, setDataStats] = useState({
     totalAnalyses: 0,
@@ -137,10 +139,10 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
+    <ScrollView className="flex-1 bg-gray-50 dark:bg-dark-bg-secondary">
       {/* Template Settings */}
-      <View className="bg-white mt-4 px-4 py-3 border-b border-gray-200">
-        <Text className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+      <View className="bg-white dark:bg-dark-bg-primary mt-4 px-4 py-3 border-b border-gray-200 dark:border-dark-border">
+        <Text className="text-xs font-semibold text-gray-500 dark:text-dark-text-tertiary uppercase tracking-wide mb-3">
           템플릿 설정
         </Text>
 
@@ -240,6 +242,58 @@ export default function SettingsScreen() {
                 </Text>
               </View>
               {imageQuality === quality && (
+                <Ionicons name="checkmark-circle" size={22} color="#3B82F6" />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Theme Settings */}
+      <View className="bg-white mt-4 px-4 py-3 border-b border-gray-200">
+        <Text className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          테마 설정
+        </Text>
+
+        <View>
+          <Text className="text-sm font-medium text-gray-700 mb-2">
+            앱 테마
+          </Text>
+          <Text className="text-xs text-gray-500 mb-3">
+            앱의 밝기 모드를 선택하세요
+          </Text>
+
+          {(['light', 'dark', 'system'] as ThemeMode[]).map((mode) => (
+            <TouchableOpacity
+              key={mode}
+              onPress={() => setTheme(mode)}
+              className="flex-row items-center justify-between py-3 border-b border-gray-100">
+              <View className="flex-row items-center">
+                <Ionicons
+                  name={
+                    mode === 'light'
+                      ? 'sunny'
+                      : mode === 'dark'
+                      ? 'moon'
+                      : 'phone-portrait-outline'
+                  }
+                  size={22}
+                  color={themeMode === mode ? '#3B82F6' : '#6B7280'}
+                />
+                <View className="ml-3">
+                  <Text className="text-sm font-medium text-gray-900">
+                    {mode === 'light' && '라이트 모드'}
+                    {mode === 'dark' && '다크 모드'}
+                    {mode === 'system' && '시스템 설정'}
+                  </Text>
+                  <Text className="text-xs text-gray-500 mt-0.5">
+                    {mode === 'light' && '항상 밝은 테마 사용'}
+                    {mode === 'dark' && '항상 어두운 테마 사용'}
+                    {mode === 'system' && '기기 설정에 따름'}
+                  </Text>
+                </View>
+              </View>
+              {themeMode === mode && (
                 <Ionicons name="checkmark-circle" size={22} color="#3B82F6" />
               )}
             </TouchableOpacity>

@@ -1,5 +1,5 @@
 import { View, Text, Pressable, Modal, TextInput } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useHistory } from '@/hooks/useHistory';
 import { useAnalysisStore, getFilteredAnalyses } from '@/store/analysisStore';
@@ -55,19 +55,22 @@ export default function HistoryScreen() {
     setAnalyses(analyses);
   }, [analyses, setAnalyses]);
 
-  // Get filtered analyses
-  const filteredAnalyses = getFilteredAnalyses(analyses, filters);
+  // Get filtered analyses with memoization for better performance
+  const filteredAnalyses = useMemo(
+    () => getFilteredAnalyses(analyses, filters),
+    [analyses, filters]
+  );
 
-  const handleItemPress = (analysis: Analysis) => {
+  const handleItemPress = useCallback((analysis: Analysis) => {
     if (selectionMode) {
       toggleSelection(analysis.id);
     } else {
       setCurrentAnalysis(analysis);
       setShowDetail(true);
     }
-  };
+  }, [selectionMode, toggleSelection, setCurrentAnalysis]);
 
-  const handleDeleteItem = (id: string) => {
+  const handleDeleteItem = useCallback((id: string) => {
     showModal(
       '삭제 확인',
       '이 히스토리를 삭제하시겠습니까?',
@@ -75,9 +78,9 @@ export default function HistoryScreen() {
         await deleteFromHistory(id);
       }
     );
-  };
+  }, [showModal, deleteFromHistory]);
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = useCallback(() => {
     if (selectedIds.length === 0) return;
 
     showModal(
@@ -89,29 +92,29 @@ export default function HistoryScreen() {
         clearSelection();
       }
     );
-  };
+  }, [selectedIds, showModal, deleteMultiple, clearSelection]);
 
-  const handleUpdateAnalysis = async (id: string, updates: Partial<Analysis>) => {
+  const handleUpdateAnalysis = useCallback(async (id: string, updates: Partial<Analysis>) => {
     await updateHistory(id, updates);
     // Refresh current analysis if it's the one being updated
     if (currentAnalysis?.id === id) {
       setCurrentAnalysis({ ...currentAnalysis, ...updates });
     }
-  };
+  }, [updateHistory, currentAnalysis, setCurrentAnalysis]);
 
-  const handleCloseDetail = () => {
+  const handleCloseDetail = useCallback(() => {
     setShowDetail(false);
     setCurrentAnalysis(null);
-  };
+  }, [setCurrentAnalysis]);
 
-  const toggleSelectionMode = () => {
+  const toggleSelectionMode = useCallback(() => {
     setSelectionMode(!selectionMode);
     clearSelection();
-  };
+  }, [selectionMode, clearSelection]);
 
-  const handleSelectAll = () => {
+  const handleSelectAll = useCallback(() => {
     selectAll();
-  };
+  }, [selectAll]);
 
   return (
     <View className="flex-1 bg-gray-50">

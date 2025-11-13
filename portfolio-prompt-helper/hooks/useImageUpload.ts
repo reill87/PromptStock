@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { useUIStore } from '@/store/uiStore';
+import { useSettingsStore } from '@/store/settingsStore';
 
 export interface ImageAsset {
   uri: string;
@@ -11,10 +12,18 @@ export interface ImageAsset {
   height?: number;
 }
 
+// Quality settings mapping
+const QUALITY_SETTINGS = {
+  low: { compress: 0.5, maxWidth: 1280 },
+  medium: { compress: 0.7, maxWidth: 1920 },
+  high: { compress: 0.9, maxWidth: 2560 },
+};
+
 export function useImageUpload() {
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<ImageAsset[]>([]);
   const showToast = useUIStore((state) => state.showToast);
+  const imageQuality = useSettingsStore((state) => state.imageQuality);
 
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -34,33 +43,45 @@ export function useImageUpload() {
     return true;
   };
 
-  const compressAndConvert = async (uri: string): Promise<ImageAsset> => {
-    try {
-      // Resize and compress image
-      const manipulated = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: 1920 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
+  const compressAndConvert = useCallback(
+    async (uri: string, includeBase64: boolean = false): Promise<ImageAsset> => {
+      try {
+        const qualitySettings = QUALITY_SETTINGS[imageQuality];
 
-      // Convert to base64 (optional, for storage)
-      const base64 = await FileSystem.readAsStringAsync(manipulated.uri, {
-        encoding: 'base64',
-      });
+        // Resize and compress image based on quality settings
+        const manipulated = await ImageManipulator.manipulateAsync(
+          uri,
+          [{ resize: { width: qualitySettings.maxWidth } }],
+          {
+            compress: qualitySettings.compress,
+            format: ImageManipulator.SaveFormat.JPEG
+          }
+        );
 
-      return {
-        uri: manipulated.uri,
-        base64: `data:image/jpeg;base64,${base64}`,
-        width: manipulated.width,
-        height: manipulated.height,
-      };
-    } catch (error) {
-      console.error('Image compression error:', error);
-      throw error;
-    }
-  };
+        // Convert to base64 only if needed (for storage)
+        let base64: string | undefined;
+        if (includeBase64) {
+          const base64String = await FileSystem.readAsStringAsync(manipulated.uri, {
+            encoding: 'base64',
+          });
+          base64 = `data:image/jpeg;base64,${base64String}`;
+        }
 
-  const pickImages = async () => {
+        return {
+          uri: manipulated.uri,
+          base64,
+          width: manipulated.width,
+          height: manipulated.height,
+        };
+      } catch (error) {
+        console.error('Image compression error:', error);
+        throw error;
+      }
+    },
+    [imageQuality]
+  );
+
+  const pickImages = useCallback(async () => {
     const hasPermission = await requestPermissions();
     if (!hasPermission) return;
 
@@ -86,9 +107,9 @@ export function useImageUpload() {
         return;
       }
 
-      // Compress and convert images
+      // Compress and convert images (no base64 for preview, only for storage)
       const processedImages = await Promise.all(
-        result.assets.map((asset) => compressAndConvert(asset.uri))
+        result.assets.map((asset) => compressAndConvert(asset.uri, false))
       );
 
       setImages([...images, ...processedImages]);
@@ -99,9 +120,9 @@ export function useImageUpload() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [images, compressAndConvert, showToast]);
 
-  const takePhoto = async () => {
+  const takePhoto = useCallback(async () => {
     const hasPermission = await requestCameraPermissions();
     if (!hasPermission) return;
 
@@ -123,7 +144,7 @@ export function useImageUpload() {
         return;
       }
 
-      const processedImage = await compressAndConvert(result.assets[0].uri);
+      const processedImage = await compressAndConvert(result.assets[0].uri, false);
       setImages([...images, processedImage]);
       showToast('success', '사진을 추가했습니다');
     } catch (error) {
@@ -132,18 +153,18 @@ export function useImageUpload() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [images, compressAndConvert, showToast]);
 
-  const removeImage = (index: number) => {
+  const removeImage = useCallback((index: number) => {
     const newImages = images.filter((_, i) => i !== index);
     setImages(newImages);
     showToast('info', '이미지를 삭제했습니다');
-  };
+  }, [images, showToast]);
 
-  const clearImages = () => {
+  const clearImages = useCallback(() => {
     setImages([]);
     showToast('info', '모든 이미지를 삭제했습니다');
-  };
+  }, [showToast]);
 
   return {
     images,

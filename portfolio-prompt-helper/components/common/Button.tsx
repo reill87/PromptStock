@@ -1,3 +1,4 @@
+import React, { memo, useMemo } from 'react';
 import { Pressable, Text, ActivityIndicator, PressableProps } from 'react-native';
 
 export interface ButtonProps extends Omit<PressableProps, 'children'> {
@@ -10,7 +11,7 @@ export interface ButtonProps extends Omit<PressableProps, 'children'> {
   fullWidth?: boolean;
 }
 
-export function Button({
+export const Button = memo(function Button({
   title,
   onPress,
   variant = 'primary',
@@ -22,44 +23,49 @@ export function Button({
 }: ButtonProps) {
   const isDisabled = disabled || loading;
 
-  // Base styles
-  const baseClass = 'items-center justify-center rounded-lg';
+  const buttonClass = useMemo(() => {
+    const baseClass = 'items-center justify-center rounded-lg';
 
-  // Variant styles
-  const variantClasses = {
-    primary: 'bg-primary active:bg-blue-600',
-    secondary: 'bg-secondary active:bg-green-600',
-    danger: 'bg-danger active:bg-red-600',
-    outline: 'bg-transparent border-2 border-primary active:bg-blue-50',
-  };
+    const variantClasses = {
+      primary: 'bg-primary active:bg-blue-600',
+      secondary: 'bg-secondary active:bg-green-600',
+      danger: 'bg-danger active:bg-red-600',
+      outline: 'bg-transparent border-2 border-primary active:bg-blue-50',
+    };
 
-  // Size styles
-  const sizeClasses = {
-    sm: 'px-3 py-2',
-    md: 'px-4 py-3',
-    lg: 'px-6 py-4',
-  };
+    const sizeClasses = {
+      sm: 'px-3 py-2',
+      md: 'px-4 py-3',
+      lg: 'px-6 py-4',
+    };
 
-  // Text color
-  const textColors = {
-    primary: 'text-white',
-    secondary: 'text-white',
-    danger: 'text-white',
-    outline: 'text-primary',
-  };
+    const disabledClass = isDisabled ? 'opacity-50' : '';
+    const widthClass = fullWidth ? 'w-full' : '';
 
-  // Text size
-  const textSizes = {
-    sm: 'text-sm',
-    md: 'text-base',
-    lg: 'text-lg',
-  };
+    return `${baseClass} ${variantClasses[variant]} ${sizeClasses[size]} ${disabledClass} ${widthClass}`;
+  }, [variant, size, isDisabled, fullWidth]);
 
-  const disabledClass = isDisabled ? 'opacity-50' : '';
-  const widthClass = fullWidth ? 'w-full' : '';
+  const textClass = useMemo(() => {
+    const textColors = {
+      primary: 'text-white',
+      secondary: 'text-white',
+      danger: 'text-white',
+      outline: 'text-primary',
+    };
 
-  const buttonClass = `${baseClass} ${variantClasses[variant]} ${sizeClasses[size]} ${disabledClass} ${widthClass}`;
-  const textClass = `${textColors[variant]} ${textSizes[size]} font-semibold`;
+    const textSizes = {
+      sm: 'text-sm',
+      md: 'text-base',
+      lg: 'text-lg',
+    };
+
+    return `${textColors[variant]} ${textSizes[size]} font-semibold`;
+  }, [variant, size]);
+
+  const indicatorColor = useMemo(
+    () => (variant === 'outline' ? '#3B82F6' : 'white'),
+    [variant]
+  );
 
   return (
     <Pressable
@@ -69,10 +75,10 @@ export function Button({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'outline' ? '#3B82F6' : 'white'} />
+        <ActivityIndicator color={indicatorColor} />
       ) : (
         <Text className={textClass}>{title}</Text>
       )}
     </Pressable>
   );
-}
+});
