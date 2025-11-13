@@ -2,6 +2,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { Analysis } from '@/types';
 import { getAnalyses } from './storage';
 
@@ -28,21 +29,34 @@ export async function exportData(): Promise<{ success: boolean; message: string 
 
     const jsonString = JSON.stringify(exportData, null, 2);
     const fileName = `portfolio-backup-${new Date().toISOString().split('T')[0]}.json`;
-    const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
-    // Write to file
-    await FileSystem.writeAsStringAsync(fileUri, jsonString, {
-      encoding: FileSystem.EncodingType.UTF8,
-    });
+    if (Platform.OS === 'web') {
+      // Web: use Blob and download
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } else {
+      // Native: use FileSystem and Sharing
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
-    // Share the file
-    const canShare = await Sharing.isAvailableAsync();
-    if (canShare) {
-      await Sharing.shareAsync(fileUri, {
-        mimeType: 'application/json',
-        dialogTitle: '포트폴리오 데이터 내보내기',
-        UTI: 'public.json',
+      await FileSystem.writeAsStringAsync(fileUri, jsonString, {
+        encoding: FileSystem.EncodingType.UTF8,
       });
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: '포트폴리오 데이터 내보내기',
+          UTI: 'public.json',
+        });
+      }
     }
 
     return {
@@ -83,9 +97,17 @@ export async function importData(): Promise<{
     const fileUri = result.assets[0].uri;
 
     // Read the file
-    const fileContent = await FileSystem.readAsStringAsync(fileUri, {
-      encoding: FileSystem.EncodingType.UTF8,
-    });
+    let fileContent: string;
+    if (Platform.OS === 'web') {
+      // Web: use fetch
+      const response = await fetch(fileUri);
+      fileContent = await response.text();
+    } else {
+      // Native: use FileSystem
+      fileContent = await FileSystem.readAsStringAsync(fileUri, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+    }
 
     // Parse JSON
     const importData: ExportData = JSON.parse(fileContent);
