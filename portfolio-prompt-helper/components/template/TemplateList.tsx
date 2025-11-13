@@ -1,4 +1,4 @@
-import { View, Text, FlatList, TextInput } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Template } from '@/types';
@@ -55,19 +55,18 @@ export function TemplateList({
 
       {/* Template List */}
       {filteredTemplates.length > 0 ? (
-        <FlatList
-          data={filteredTemplates}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TemplateCard
-              template={item}
-              selected={item.id === selectedTemplateId}
-              onSelect={() => onSelectTemplate(item)}
-            />
-          )}
-          ItemSeparatorComponent={() => <View className="h-3" />}
-          showsVerticalScrollIndicator={false}
-        />
+        <View>
+          {filteredTemplates.map((item, index) => (
+            <View key={item.id}>
+              <TemplateCard
+                template={item}
+                selected={item.id === selectedTemplateId}
+                onSelect={() => onSelectTemplate(item)}
+              />
+              {index < filteredTemplates.length - 1 && <View className="h-3" />}
+            </View>
+          ))}
+        </View>
       ) : (
         <View className="flex-1 items-center justify-center py-12">
           <Ionicons name="search-outline" size={64} color="#D1D5DB" />
