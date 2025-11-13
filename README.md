@@ -1,17 +1,19 @@
-# Portfolio Prompt Helper
+# 📱 PromptStock (Portfolio Prompt Helper)
 
-> 포트폴리오 스크린샷으로 AI 분석 프롬프트를 자동 생성하는 웹 서비스
+> 포트폴리오 스크린샷으로 AI 분석 프롬프트를 자동 생성하는 크로스 플랫폼 모바일 애플리케이션
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.0-646CFF.svg)](https://vitejs.dev/)
+[![Expo](https://img.shields.io/badge/Expo-54.0.23-000020?style=flat&logo=expo)](https://expo.dev)
+[![React Native](https://img.shields.io/badge/React%20Native-0.81.5-61DAFB?style=flat&logo=react)](https://reactnative.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9.2-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org)
 
 ## 프로젝트 소개
 
-**Portfolio Prompt Helper**는 주식 포트폴리오 스크린샷을 업로드하면, 사용자가 선택한 분석 목적에 맞는 최적화된 프롬프트를 자동으로 생성해주는 무료 웹 서비스입니다.
+**PromptStock (Portfolio Prompt Helper)**는 주식 포트폴리오 스크린샷을 업로드하면, 사용자가 선택한 분석 목적에 맞는 최적화된 프롬프트를 자동으로 생성해주는 **크로스 플랫폼 모바일 애플리케이션**입니다.
 
 생성된 프롬프트를 복사해서 ChatGPT나 Claude 같은 LLM에 붙여넣기만 하면, 전문적인 포트폴리오 분석을 받을 수 있습니다.
+
+**Expo 기반으로 개발되어 iOS, Android, Web 모두 지원합니다.**
 
 ### 핵심 가치
 
@@ -51,80 +53,136 @@
 
 ## 기술 스택
 
-### Frontend
-- **React 18** - UI 프레임워크
-- **TypeScript** - 타입 안정성
-- **Vite** - 빌드 도구
-- **Tailwind CSS** - 스타일링
-- **Zustand** - 상태 관리
-- **React Router v6** - 라우팅
-- **React Hook Form** - 폼 관리
-- **browser-image-compression** - 이미지 최적화
+### Core
+- **Expo** 54.0.23 - React Native 개발 플랫폼
+- **React** 19.1.0 - UI 라이브러리
+- **React Native** 0.81.5 - 크로스 플랫폼 모바일 프레임워크
+- **TypeScript** 5.9.2 - 타입 안정성
 
-### Storage
-- **LocalStorage** - 설정 및 간단한 데이터
-- **IndexedDB** - 대용량 이미지 저장
+### Navigation & Routing
+- **Expo Router** 6.0.14 - 파일 기반 라우팅
+- **React Navigation** - 네이티브 네비게이션
+
+### State Management
+- **Zustand** 5.0.8 - 경량 상태 관리
+- **AsyncStorage** 2.2.0 - 로컬 저장소
+
+### UI & Styling
+- **NativeWind** 4.2.1 - Tailwind CSS for React Native
+- **Tailwind CSS** 3.3.2 - 유틸리티 CSS 프레임워크
+- **React Native Reanimated** 4.1.1 - 고성능 애니메이션
+
+### Media & Files
+- **expo-image-picker** 17.0.8 - 이미지 선택/촬영
+- **expo-image-manipulator** 14.0.7 - 이미지 처리
+- **expo-file-system** 19.0.17 - 파일 시스템 접근
 
 ### Deployment
-- **Vercel / Netlify** - 호스팅
+- **Expo Application Services (EAS)** - 빌드 및 배포
+- **Expo Go** - 개발 및 테스트
 
 ## 시작하기
 
 ### 필수 요구사항
 
-- Node.js 18+
+- Node.js 18.x 이상
 - npm 또는 yarn
+- **iOS**: macOS + Xcode 15.0 이상
+- **Android**: Android Studio + SDK 33 이상
 
 ### 설치
 
 ```bash
 # 저장소 클론
 git clone https://github.com/reill87/PromptStock.git
-cd PromptStock
+cd PromptStock/portfolio-prompt-helper
 
 # 의존성 설치
 npm install
 
-# 개발 서버 실행
-npm run dev
+# iOS Pod 설치 (macOS만 해당)
+cd ios && pod install && cd ..
 ```
 
-개발 서버가 `http://localhost:5173`에서 실행됩니다.
+### 실행
+
+```bash
+# 개발 서버 시작 (QR 코드 표시)
+npm start
+
+# iOS 시뮬레이터
+npm run ios
+
+# Android 에뮬레이터
+npm run android
+
+# 웹 브라우저
+npm run web
+```
 
 ### 빌드
 
 ```bash
-# 프로덕션 빌드
-npm run build
+# 개발 빌드
+eas build --platform ios --profile development
+eas build --platform android --profile development
 
-# 빌드 결과 미리보기
-npm run preview
+# 프로덕션 빌드
+eas build --platform ios --profile production
+eas build --platform android --profile production
 ```
+
+자세한 설치 및 테스트 가이드는 [portfolio-prompt-helper/TESTING.md](portfolio-prompt-helper/TESTING.md)를 참고하세요.
 
 ## 프로젝트 구조
 
 ```
-portfolio-prompt-helper/
-├── public/                    # 정적 파일
-│   └── templates/            # 기본 템플릿 JSON
-├── src/
-│   ├── components/           # React 컴포넌트
-│   │   ├── common/          # 공통 컴포넌트
-│   │   ├── upload/          # 이미지 업로드
-│   │   ├── template/        # 템플릿 선택
-│   │   ├── prompt/          # 프롬프트 생성
-│   │   └── history/         # 히스토리
-│   ├── pages/               # 페이지 컴포넌트
-│   ├── hooks/               # 커스텀 훅
-│   ├── store/               # Zustand 상태 관리
-│   ├── utils/               # 유틸리티 함수
-│   ├── types/               # TypeScript 타입
-│   └── constants/           # 상수 및 템플릿
-├── PRD.md                   # 제품 요구사항 문서
-├── package.json
-├── vite.config.ts
-├── tsconfig.json
-└── tailwind.config.js
+PromptStock/
+├── portfolio-prompt-helper/        # 메인 애플리케이션
+│   ├── app/                        # Expo Router 페이지
+│   │   ├── (tabs)/                # 탭 네비게이션 그룹
+│   │   │   ├── index.tsx         # 홈 화면 (프롬프트 생성)
+│   │   │   ├── two.tsx           # 히스토리 화면
+│   │   │   ├── settings.tsx      # 설정 화면
+│   │   │   └── _layout.tsx       # 탭 레이아웃
+│   │   ├── custom-templates.tsx  # 커스텀 템플릿 관리
+│   │   ├── _layout.tsx           # 루트 레이아웃
+│   │   ├── modal.tsx             # 모달 화면
+│   │   └── +not-found.tsx        # 404 페이지
+│   ├── components/               # React 컴포넌트
+│   │   ├── common/              # 공통 컴포넌트 (Button, Card, Toast 등)
+│   │   ├── upload/              # 이미지 업로드
+│   │   ├── template/            # 템플릿 선택 및 편집
+│   │   ├── prompt/              # 프롬프트 생성
+│   │   └── history/             # 히스토리 관리
+│   ├── hooks/                   # 커스텀 훅
+│   │   ├── useImageUpload.ts
+│   │   ├── useHistory.ts
+│   │   ├── useTheme.ts
+│   │   └── useClipboard.ts
+│   ├── store/                   # Zustand 상태 관리
+│   │   ├── analysisStore.ts
+│   │   ├── settingsStore.ts
+│   │   └── uiStore.ts
+│   ├── utils/                   # 유틸리티 함수
+│   │   ├── storage.ts
+│   │   ├── promptGenerator.ts
+│   │   └── dataManagement.ts
+│   ├── types/                   # TypeScript 타입
+│   │   ├── analysis.ts
+│   │   └── template.ts
+│   ├── constants/              # 상수 및 템플릿
+│   │   ├── templates.ts       # 5개 기본 템플릿
+│   │   └── Colors.ts
+│   ├── assets/                 # 정적 파일
+│   ├── app.json               # Expo 설정
+│   ├── eas.json               # EAS 빌드 설정
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── tailwind.config.js
+├── PRD.md                      # 제품 요구사항 문서
+├── IMPLEMENTATION_ROADMAP.md   # 구현 로드맵
+└── README.md                   # 이 파일
 ```
 
 ## 사용 방법
@@ -153,39 +211,72 @@ portfolio-prompt-helper/
 
 ## 로드맵
 
-### Phase 1: MVP (Week 1-2) ✅
-- [x] 프로젝트 셋업
+### Phase 1: MVP (Week 1-2) ✅ **완료**
+- [x] 프로젝트 셋업 (Expo + React Native)
 - [x] PRD 작성
-- [ ] 기본 라우팅 구조
-- [ ] 이미지 업로드 기능
-- [ ] 5개 기본 템플릿 구현
-- [ ] 프롬프트 생성 로직
-- [ ] 클립보드 복사 기능
+- [x] 기본 라우팅 구조 (Expo Router 기반)
+- [x] 이미지 업로드 기능 (갤러리/카메라, 압축)
+- [x] 5개 기본 템플릿 구현
+- [x] 프롬프트 생성 로직
+- [x] 클립보드 복사 기능
 
-### Phase 2: 히스토리 및 고급 기능 (Week 3-4)
-- [ ] LocalStorage 히스토리 저장
-- [ ] 히스토리 조회/삭제 UI
-- [ ] 템플릿 커스터마이징
-- [ ] 태그 시스템
-- [ ] 반응형 디자인
+### Phase 2: 히스토리 및 고급 기능 (Week 3-4) ✅ **완료**
+- [x] AsyncStorage 히스토리 저장
+- [x] 히스토리 조회/삭제 UI (상세 모달 포함)
+- [x] 템플릿 커스터마이징 (생성/편집/삭제)
+- [x] 태그 시스템 (추가, 필터링)
+- [x] 반응형 디자인 (NativeWind)
 
-### Phase 3: 최적화 및 배포 (Week 5-6)
-- [ ] IndexedDB 마이그레이션
-- [ ] 검색 필터링
-- [ ] 데이터 내보내기/가져오기
-- [ ] 성능 최적화
-- [ ] 배포 및 모니터링
+### Phase 3: 최적화 및 배포 (Week 5-6) 🚧 **진행 중**
+- [x] AsyncStorage 사용 (IndexedDB 대신, 모바일 환경에 적합)
+- [x] 검색 필터링 (검색, 태그, 날짜, 카테고리, 정렬)
+- [x] 데이터 내보내기/가져오기 (JSON 백업)
+- [x] 성능 최적화 (이미지 압축, FlatList 최적화, 메모이제이션)
+- [x] 다크모드 (라이트/다크/시스템)
+- [ ] 앱 스토어 배포 (iOS/Android)
+- [ ] 모니터링 시스템 구축
 
-### Phase 4: 향후 개선
+### Phase 4: 향후 개선 📋 **계획**
 - [ ] 커뮤니티 템플릿 마켓플레이스
 - [ ] OCR 종목명 자동 추출
+- [ ] AI 직접 연동 (ChatGPT/Claude API)
 - [ ] 프롬프트 체인 기능
-- [ ] 다크모드
-- [ ] PWA 지원
+- [ ] 클라우드 동기화
+- [ ] 다국어 지원 (영어, 일본어)
+- [ ] 프리미엄 기능
+
+## 지원 플랫폼
+
+| 플랫폼 | 상태 | 최소 버전 |
+|--------|------|-----------|
+| iOS | ✅ 지원 | iOS 13.0+ |
+| Android | ✅ 지원 | Android 6.0+ (API 23) |
+| 웹 | ✅ 지원 | 모던 브라우저 (Chrome, Safari, Firefox) |
+
+### 디바이스 지원
+- 📱 스마트폰 (세로/가로 모드)
+- 📲 태블릿 (iPad, Android 태블릿)
+- 💻 데스크톱 (웹 버전)
+
+## 주요 문서
+
+- **[TESTING.md](portfolio-prompt-helper/TESTING.md)** - 로컬 테스트 및 설치 가이드
+- **[IMPROVEMENTS.md](portfolio-prompt-helper/IMPROVEMENTS.md)** - 성능 개선 및 기능 상세
+- **[QUICKSTART.md](portfolio-prompt-helper/QUICKSTART.md)** - 빠른 시작 가이드
+- **[PRD.md](PRD.md)** - 제품 요구사항 문서
+- **[IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md)** - 구현 로드맵
 
 ## 기여하기
 
-기여를 환영합니다! 자세한 내용은 [CONTRIBUTING.md](CONTRIBUTING.md)를 참조하세요.
+기여를 환영합니다! 다음 방법으로 참여해주세요:
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+자세한 내용은 [CONTRIBUTING.md](CONTRIBUTING.md)를 참조하세요.
 
 ## 라이센스
 
@@ -193,15 +284,18 @@ portfolio-prompt-helper/
 
 ## 문의
 
-- 이슈: [GitHub Issues](https://github.com/reill87/PromptStock/issues)
-- 이메일: [프로젝트 관리자 이메일]
-
-## 참고 문서
-
-- [PRD (Product Requirements Document)](PRD.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
+- 🐛 이슈: [GitHub Issues](https://github.com/reill87/PromptStock/issues)
+- 💬 토론: [GitHub Discussions](https://github.com/reill87/PromptStock/discussions)
+- 📧 이메일: [프로젝트 관리자 이메일]
 
 ---
 
-**만든이**: reill87
-**최종 업데이트**: 2025-10-23
+<div align="center">
+
+**⭐ 이 프로젝트가 도움이 되셨다면 Star를 눌러주세요! ⭐**
+
+Made with ❤️ by reill87
+
+**최종 업데이트**: 2025-11-13
+
+</div>
