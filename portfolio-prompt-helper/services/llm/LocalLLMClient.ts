@@ -199,8 +199,17 @@ export class LocalLLMClient implements LLMClient {
         return `data:image/jpeg;base64,${base64}`;
       });
 
+      // LLaVA 프롬프트 형식으로 변환
+      // LLaVA는 "USER: <image>\n{질문}\nASSISTANT:" 형식이 필요함
+      let formattedPrompt = prompt;
+      if (imageDataURLs && imageDataURLs.length > 0) {
+        // 이미지가 있으면 LLaVA 템플릿 적용
+        const imageTokens = imageDataURLs.map(() => '<image>').join('\n');
+        formattedPrompt = `USER: ${imageTokens}\n${prompt}\nASSISTANT:`;
+      }
+
       console.log('Starting completion with:', {
-        promptLength: prompt.length,
+        promptLength: formattedPrompt.length,
         imageCount: imageDataURLs?.length || 0,
         maxTokens: this.config.maxTokens || 512,
         temperature: this.config.temperature || 0.7,
@@ -209,13 +218,13 @@ export class LocalLLMClient implements LLMClient {
       // llama.rn completion 실행 (타임아웃 5분)
       const result = await withTimeout(
         this.context!.completion({
-          prompt,
+          prompt: formattedPrompt,
           images: imageDataURLs,
           n_predict: this.config.maxTokens || 512,
           temperature: this.config.temperature || 0.7,
           top_k: 40,
           top_p: 0.95,
-          stop: ['</s>', '\n\n\n'], // 중지 토큰
+          stop: ['</s>', '\n\n\n', 'USER:'], // 중지 토큰 (USER: 추가하여 대화 종료)
         }),
         GENERATION_TIMEOUT_MS,
         '응답 생성 시간 초과 (5분). 프롬프트를 더 짧게 하거나 이미지 개수를 줄여주세요.'
