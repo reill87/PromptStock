@@ -53,7 +53,6 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const loadInstalledModel = useModelStore((state) => state.loadInstalledModel);
-  const installedModel = useModelStore((state) => state.installedModel);
   const setInstalledModel = useModelStore((state) => state.setInstalledModel);
 
   // 앱 시작 시 저장된 모델 정보 로드 및 검증
@@ -65,7 +64,9 @@ function RootLayoutNav() {
 
         // 모델 정보가 있다면 파일 존재 여부 확인
         const currentModel = useModelStore.getState().installedModel;
+
         if (currentModel) {
+          // 케이스 1: AsyncStorage에 정보 있음 → 파일 검증
           const filesExist = await ModelManager.verifyModelFiles(currentModel);
 
           if (!filesExist) {
@@ -74,6 +75,38 @@ function RootLayoutNav() {
             await setInstalledModel(null);
           } else {
             console.log('Model files verified successfully');
+          }
+        } else {
+          // 케이스 2: AsyncStorage에 정보 없음 → 파일이 있는지 확인 (스크립트로 복사한 경우)
+          console.log('No installed model in storage, checking for existing files...');
+
+          const modelsDir = `${require('expo-file-system/legacy').documentDirectory}models/`;
+          const modelPath = `${modelsDir}llava-v1.5-7b-q4.gguf`;
+          const mmprojPath = `${modelsDir}llava-v1.5-7b-mmproj.gguf`;
+
+          const FileSystem = require('expo-file-system/legacy');
+          const modelInfo = await FileSystem.getInfoAsync(modelPath);
+          const mmprojInfo = await FileSystem.getInfoAsync(mmprojPath);
+
+          if (modelInfo.exists && mmprojInfo.exists) {
+            console.log('Found existing model files! Auto-registering...');
+
+            // 파일이 있으면 자동으로 등록
+            const autoInstalledModel = {
+              modelId: 'llava-v1.5-7b-q4' as const,
+              installedAt: new Date().toISOString(),
+              version: '1.5',
+              files: {
+                modelPath,
+                mmprojPath,
+                modelSize: modelInfo.size || 0,
+                mmprojSize: mmprojInfo.size || 0,
+              },
+              diskUsage: (modelInfo.size || 0) + (mmprojInfo.size || 0),
+            };
+
+            await setInstalledModel(autoInstalledModel);
+            console.log('✅ Model auto-registered successfully!');
           }
         }
       } catch (error) {
