@@ -1,10 +1,11 @@
-import { View, Text, ScrollView, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
 import { useUIStore } from '@/store/uiStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useModelStore } from '@/store/modelStore';
 import { ImageUploader } from '@/components/upload/ImageUploader';
 import { ImagePreview } from '@/components/upload/ImagePreview';
 import { TemplateList } from '@/components/template/TemplateList';
@@ -23,6 +24,7 @@ export default function HomeScreen() {
   const showToast = useUIStore((state) => state.showToast);
   const showModal = useUIStore((state) => state.showModal);
   const llmMode = useSettingsStore((state) => state.llmConfig.mode);
+  const installedModel = useModelStore((state) => state.installedModel);
   const { images, loading, pickImages, takePhoto, removeImage, clearImages, convertImagesToBase64 } = useImageUpload();
   const { saveToHistory, loading: savingToHistory } = useHistory();
   const { executeAnalysis, cancelAnalysis, isProcessing, progress } = useLLMClient();
@@ -78,6 +80,12 @@ export default function HomeScreen() {
     }
 
     // Local LLM mode: Execute AI analysis
+    // 모델 설치 확인
+    if (!installedModel) {
+      showToast('warning', '모델을 먼저 다운로드해주세요');
+      return;
+    }
+
     try {
       // Convert images to base64
       const imageData = await convertImagesToBase64(false);
@@ -228,8 +236,8 @@ export default function HomeScreen() {
           <Text className="text-xl font-bold mb-4">Step 3. 분석 방식 선택</Text>
           <LLMModeSwitcher />
 
-          {/* Model Downloader (only show in local mode) */}
-          {llmMode === 'local' && (
+          {/* Model Downloader (show on native platforms) */}
+          {Platform.OS !== 'web' && (
             <View className="mt-4">
               <ModelDownloader />
             </View>
