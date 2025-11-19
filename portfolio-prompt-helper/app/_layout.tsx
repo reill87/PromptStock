@@ -10,6 +10,8 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import { ToastContainer } from '@/components/common/Toast';
 import { Modal } from '@/components/common/Modal';
+import { useModelStore } from '@/store/modelStore';
+import { ModelManager } from '@/services/model/ModelManager';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -50,6 +52,37 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const loadInstalledModel = useModelStore((state) => state.loadInstalledModel);
+  const installedModel = useModelStore((state) => state.installedModel);
+  const setInstalledModel = useModelStore((state) => state.setInstalledModel);
+
+  // 앱 시작 시 저장된 모델 정보 로드 및 검증
+  useEffect(() => {
+    const initializeModel = async () => {
+      try {
+        // AsyncStorage에서 모델 정보 로드
+        await loadInstalledModel();
+
+        // 모델 정보가 있다면 파일 존재 여부 확인
+        const currentModel = useModelStore.getState().installedModel;
+        if (currentModel) {
+          const filesExist = await ModelManager.verifyModelFiles(currentModel);
+
+          if (!filesExist) {
+            console.warn('Model files not found, clearing installed model state');
+            // 파일이 없으면 상태 초기화
+            await setInstalledModel(null);
+          } else {
+            console.log('Model files verified successfully');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to initialize model on startup:', error);
+      }
+    };
+
+    initializeModel();
+  }, []);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
