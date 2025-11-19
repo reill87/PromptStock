@@ -5,9 +5,29 @@
  */
 
 import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system';
 import { initLlama } from 'llama.rn';
 import type { LlamaContext } from 'llama.rn';
 import { LLMClient, LLMResponse, LLMGenerationProgress } from '@/types/llm';
+
+// 타임아웃 상수 (5분)
+const GENERATION_TIMEOUT_MS = 5 * 60 * 1000;
+
+/**
+ * 타임아웃 래퍼 함수
+ */
+function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  errorMessage: string
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+    ),
+  ]);
+}
 
 export class LocalLLMClient implements LLMClient {
   name = 'LLaVA 1.5 7B (로컬)';
@@ -47,19 +67,50 @@ export class LocalLLMClient implements LLMClient {
     try {
       this.onProgress?.({
         stage: 'initializing',
-        progress: 10,
+        progress: 5,
+        message: '모델 파일 확인 중...',
+      });
+
+      // 모델 파일 존재 여부 확인
+      const modelExists = await FileSystem.getInfoAsync(this.modelPath);
+      if (!modelExists.exists) {
+        throw new Error(
+          `모델 파일을 찾을 수 없습니다.\n경로: ${this.modelPath}\n\n모델을 다시 다운로드해주세요.`
+        );
+      }
+
+      const mmprojExists = await FileSystem.getInfoAsync(this.mmprojPath);
+      if (!mmprojExists.exists) {
+        throw new Error(
+          `Vision 모델 파일을 찾을 수 없습니다.\n경로: ${this.mmprojPath}\n\n모델을 다시 다운로드해주세요.`
+        );
+      }
+
+      this.onProgress?.({
+        stage: 'initializing',
+        progress: 20,
         message: '모델 로딩 중...',
       });
 
-      // llama.rn 초기화
-      this.context = await initLlama({
+      console.log('Initializing llama.rn with:', {
         model: this.modelPath,
-        mmproj: this.mmprojPath, // Vision projector
-        use_mlock: true, // 메모리 잠금 (성능 향상)
-        n_ctx: this.config.contextSize || 2048, // 컨텍스트 크기
-        n_gpu_layers: 0, // CPU만 사용 (배터리 고려)
-        seed: 42, // 재현 가능한 결과
+        mmproj: this.mmprojPath,
+        contextSize: this.config.contextSize || 2048,
       });
+
+      // llama.rn 초기화 (타임아웃 2분)
+      this.context = await withTimeout(
+        initLlama({
+          model: this.modelPath,
+          mmproj: this.mmprojPath, // Vision projector
+          use_mlock: true, // 메모리 잠금 (성능 향상)
+          n_ctx: this.config.contextSize || 2048, // 컨텍스트 크기
+          n_gpu_layers: 0, // CPU만 사용 (배터리 고려)
+          seed: 42, // 재현 가능한 결과
+        }),
+        120000,
+        '모델 로딩 시간 초과 (2분). 디바이스 메모리가 부족하거나 모델이 손상되었을 수 있습니다.'
+      );
 
       this.onProgress?.({
         stage: 'initializing',
@@ -71,7 +122,21 @@ export class LocalLLMClient implements LLMClient {
     } catch (error: any) {
       console.error('Failed to initialize llama.rn:', error);
       this.context = null;
-      throw new Error(`모델 초기화 실패: ${error.message}`);
+
+      // 에러 타입별로 다른 메시지 제공
+      if (error.message.includes('메모리')) {
+        throw new Error(
+          '메모리 부족: 디바이스 RAM이 부족합니다. 다른 앱을 종료하고 다시 시도해주세요.'
+        );
+      } else if (error.message.includes('찾을 수 없습니다')) {
+        throw error; // 이미 명확한 메시지
+      } else if (error.message.includes('시간 초과')) {
+        throw error; // 타임아웃 메시지
+      } else {
+        throw new Error(
+          `모델 초기화 실패: ${error.message}\n\n앱을 재시작하거나 모델을 다시 다운로드해주세요.`
+        );
+      }
     }
   }
 
@@ -83,6 +148,17 @@ export class LocalLLMClient implements LLMClient {
    * @returns LLM 응답
    */
   async generate(prompt: string, images?: string[]): Promise<LLMResponse> {
+    // 입력 검증
+    if (!prompt || prompt.trim().length === 0) {
+      throw new Error('프롬프트가 비어있습니다.');
+    }
+
+    if (prompt.length > 10000) {
+      throw new Error(
+        '프롬프트가 너무 깁니다. 10,000자 이하로 작성해주세요.'
+      );
+    }
+
     if (!this.context) {
       await this.initialize();
     }
@@ -97,6 +173,13 @@ export class LocalLLMClient implements LLMClient {
           progress: 30,
           message: `이미지 처리 중... (${images.length}개)`,
         });
+
+        // 이미지 개수 제한
+        if (images.length > 10) {
+          throw new Error(
+            '이미지가 너무 많습니다. 최대 10개까지만 지원합니다.'
+          );
+        }
       }
 
       // 응답 생성 단계
@@ -116,16 +199,27 @@ export class LocalLLMClient implements LLMClient {
         return `data:image/jpeg;base64,${base64}`;
       });
 
-      // llama.rn completion 실행
-      const result = await this.context!.completion({
-        prompt,
-        images: imageDataURLs,
-        n_predict: this.config.maxTokens || 512,
+      console.log('Starting completion with:', {
+        promptLength: prompt.length,
+        imageCount: imageDataURLs?.length || 0,
+        maxTokens: this.config.maxTokens || 512,
         temperature: this.config.temperature || 0.7,
-        top_k: 40,
-        top_p: 0.95,
-        stop: ['</s>', '\n\n\n'], // 중지 토큰
       });
+
+      // llama.rn completion 실행 (타임아웃 5분)
+      const result = await withTimeout(
+        this.context!.completion({
+          prompt,
+          images: imageDataURLs,
+          n_predict: this.config.maxTokens || 512,
+          temperature: this.config.temperature || 0.7,
+          top_k: 40,
+          top_p: 0.95,
+          stop: ['</s>', '\n\n\n'], // 중지 토큰
+        }),
+        GENERATION_TIMEOUT_MS,
+        '응답 생성 시간 초과 (5분). 프롬프트를 더 짧게 하거나 이미지 개수를 줄여주세요.'
+      );
 
       this.onProgress?.({
         stage: 'completed',
@@ -135,17 +229,42 @@ export class LocalLLMClient implements LLMClient {
 
       const processingTime = Date.now() - startTime;
 
-      console.log(`Generation completed in ${processingTime}ms`);
+      console.log(`Generation completed in ${processingTime}ms`, {
+        tokenCount: result.tokens?.length,
+        textLength: result.text.length,
+      });
+
+      // 빈 응답 체크
+      const responseText = result.text.trim();
+      if (!responseText) {
+        throw new Error(
+          '모델이 빈 응답을 생성했습니다. 프롬프트를 수정하거나 다시 시도해주세요.'
+        );
+      }
 
       return {
-        text: result.text.trim(),
+        text: responseText,
         processingTime,
         modelUsed: this.name,
         tokenCount: result.tokens?.length,
       };
     } catch (error: any) {
       console.error('Generation failed:', error);
-      throw new Error(`분석 실패: ${error.message}`);
+
+      // 에러 타입별로 다른 메시지 제공
+      if (error.message.includes('시간 초과')) {
+        throw error; // 타임아웃 메시지
+      } else if (error.message.includes('메모리')) {
+        throw new Error(
+          '메모리 부족: 디바이스 RAM이 부족합니다. 다른 앱을 종료하고 다시 시도해주세요.'
+        );
+      } else if (error.message.includes('너무')) {
+        throw error; // 입력 크기 관련 메시지
+      } else {
+        throw new Error(
+          `분석 실패: ${error.message}\n\n앱을 재시작하거나 설정을 조정해주세요.`
+        );
+      }
     }
   }
 
