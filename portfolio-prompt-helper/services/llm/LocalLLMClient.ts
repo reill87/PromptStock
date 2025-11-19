@@ -208,12 +208,32 @@ export class LocalLLMClient implements LLMClient {
         formattedPrompt = `USER: ${imageTokens}\n${prompt}\nASSISTANT:`;
       }
 
-      console.log('Starting completion with:', {
-        promptLength: formattedPrompt.length,
+      // 🔍 상세 디버깅 로그
+      console.log('========== LocalLLM Generation Debug ==========');
+      console.log('📝 Original prompt length:', prompt.length);
+      console.log('📝 Original prompt preview:', prompt.substring(0, 100) + '...');
+      console.log('🖼️  Images received:', images?.length || 0);
+      console.log('🖼️  Image data URLs created:', imageDataURLs?.length || 0);
+
+      if (imageDataURLs && imageDataURLs.length > 0) {
+        console.log('🖼️  First image info:', {
+          startsWithData: imageDataURLs[0].startsWith('data:'),
+          length: imageDataURLs[0].length,
+          prefix: imageDataURLs[0].substring(0, 50) + '...'
+        });
+      }
+
+      console.log('📋 Formatted prompt length:', formattedPrompt.length);
+      console.log('📋 Formatted prompt (first 300 chars):');
+      console.log(formattedPrompt.substring(0, 300));
+      console.log('⚙️  Completion params:', {
         imageCount: imageDataURLs?.length || 0,
         maxTokens: this.config.maxTokens || 512,
         temperature: this.config.temperature || 0.7,
+        hasImages: !!(imageDataURLs && imageDataURLs.length > 0),
+        usingLLaVATemplate: formattedPrompt.startsWith('USER:'),
       });
+      console.log('===============================================');
 
       // llama.rn completion 실행 (타임아웃 5분)
       const result = await withTimeout(
@@ -238,10 +258,15 @@ export class LocalLLMClient implements LLMClient {
 
       const processingTime = Date.now() - startTime;
 
-      console.log(`Generation completed in ${processingTime}ms`, {
+      console.log('========== Generation Result Debug ==========');
+      console.log(`⏱️  Processing time: ${processingTime}ms`);
+      console.log('📊 Result stats:', {
         tokenCount: result.tokens?.length,
         textLength: result.text.length,
       });
+      console.log('📄 Generated text (first 200 chars):');
+      console.log(result.text.substring(0, 200));
+      console.log('============================================');
 
       // 빈 응답 체크
       const responseText = result.text.trim();
