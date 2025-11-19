@@ -124,6 +124,8 @@ export default function HomeScreen() {
         thumbnails: imageData.thumbnails,
         userNote: userNote.trim() || undefined,
         tags: tags,
+        llmMode: llmMode,
+        aiResponse: aiResponse || undefined,
       });
 
       setIsSaved(true);
