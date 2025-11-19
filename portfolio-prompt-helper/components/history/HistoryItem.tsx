@@ -135,10 +135,19 @@ export const HistoryItem = memo(function HistoryItem({
           {/* Template name and date */}
           <View className="flex-row justify-between items-start mb-2">
             <View className="flex-1 mr-2">
-              <Text className="text-lg font-bold text-gray-900">
-                {analysis.templateName}
-              </Text>
-              <Text className="text-sm text-gray-500 mt-1">
+              <View className="flex-row items-center gap-2 mb-1">
+                <Text className="text-lg font-bold text-gray-900">
+                  {analysis.templateName}
+                </Text>
+                {analysis.llmMode === 'local' && (
+                  <View className="bg-green-100 px-2 py-0.5 rounded">
+                    <Text className="text-xs font-semibold text-green-700">
+                      AI
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text className="text-sm text-gray-500">
                 {formattedDate}
               </Text>
             </View>

@@ -1,15 +1,19 @@
-import { View, Text, ScrollView, TextInput, Pressable } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, ActivityIndicator } from 'react-native';
 import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
 import { useUIStore } from '@/store/uiStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { ImageUploader } from '@/components/upload/ImageUploader';
 import { ImagePreview } from '@/components/upload/ImagePreview';
 import { TemplateList } from '@/components/template/TemplateList';
 import { PromptPreview } from '@/components/prompt/PromptPreview';
+import { LLMModeSwitcher } from '@/components/llm/LLMModeSwitcher';
+import { ModelDownloader } from '@/components/llm/ModelDownloader';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { useHistory } from '@/hooks/useHistory';
+import { useLLMClient } from '@/hooks/useLLMClient';
 import { DEFAULT_TEMPLATES } from '@/constants/templates';
 import { Template } from '@/types';
 import { generatePrompt } from '@/utils/promptGenerator';
@@ -18,10 +22,13 @@ import { getCustomTemplates } from '@/utils/templateStorage';
 export default function HomeScreen() {
   const showToast = useUIStore((state) => state.showToast);
   const showModal = useUIStore((state) => state.showModal);
+  const llmMode = useSettingsStore((state) => state.llmConfig.mode);
   const { images, loading, pickImages, takePhoto, removeImage, clearImages, convertImagesToBase64 } = useImageUpload();
   const { saveToHistory, loading: savingToHistory } = useHistory();
+  const { executeAnalysis, cancelAnalysis, isProcessing, progress } = useLLMClient();
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
+  const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [showSaveForm, setShowSaveForm] = useState(false);
   const [userNote, setUserNote] = useState('');
   const [tagInput, setTagInput] = useState('');
@@ -46,7 +53,7 @@ export default function HomeScreen() {
     }
   };
 
-  const handleGeneratePrompt = () => {
+  const handleGeneratePrompt = async () => {
     if (!selectedTemplate) {
       showToast('warning', '템플릿을 선택해주세요');
       return;
@@ -63,7 +70,29 @@ export default function HomeScreen() {
 
     setGeneratedPrompt(prompt);
     setIsSaved(false);
-    showToast('success', '프롬프트가 생성되었습니다!');
+
+    // Clipboard mode: Just copy to clipboard (existing behavior)
+    if (llmMode === 'clipboard') {
+      showToast('success', '프롬프트가 생성되었습니다!');
+      return;
+    }
+
+    // Local LLM mode: Execute AI analysis
+    try {
+      // Convert images to base64
+      const imageData = await convertImagesToBase64(false);
+      const base64Images = imageData.images;
+
+      // Execute analysis
+      const response = await executeAnalysis(prompt, base64Images);
+
+      setAiResponse(response.text);
+      showToast('success', `AI 분석 완료! (${(response.processingTime / 1000).toFixed(1)}초)`);
+    } catch (error: any) {
+      console.error('AI analysis failed:', error);
+      showToast('error', `분석 실패: ${error.message}`);
+      setAiResponse(null);
+    }
   };
 
   const handleAddTag = () => {
@@ -95,6 +124,8 @@ export default function HomeScreen() {
         thumbnails: imageData.thumbnails,
         userNote: userNote.trim() || undefined,
         tags: tags,
+        llmMode: llmMode,
+        aiResponse: aiResponse || undefined,
       });
 
       setIsSaved(true);
@@ -113,9 +144,15 @@ export default function HomeScreen() {
       '초기화',
       '모든 내용을 초기화하시겠습니까?',
       () => {
+        // Cancel any ongoing analysis
+        if (isProcessing) {
+          cancelAnalysis();
+        }
+
         clearImages();
         setSelectedTemplate(null);
         setGeneratedPrompt(null);
+        setAiResponse(null);
         setShowSaveForm(false);
         setUserNote('');
         setTags([]);
@@ -186,32 +223,100 @@ export default function HomeScreen() {
           />
         </Card>
 
-        {/* Generate Button */}
+        {/* Step 2.5: LLM Mode Selection */}
+        <Card variant="elevated" className="mb-4">
+          <Text className="text-xl font-bold mb-4">Step 3. 분석 방식 선택</Text>
+          <LLMModeSwitcher />
+
+          {/* Model Downloader (only show in local mode) */}
+          {llmMode === 'local' && (
+            <View className="mt-4">
+              <ModelDownloader />
+            </View>
+          )}
+        </Card>
+
+        {/* Generate/Analyze Button */}
         {images.length > 0 && selectedTemplate && !generatedPrompt && (
-          <Button
-            title="프롬프트 생성"
-            variant="primary"
-            size="lg"
-            onPress={handleGeneratePrompt}
-            fullWidth
-          />
+          <View>
+            <Button
+              title={llmMode === 'clipboard' ? '프롬프트 생성' : 'AI 분석 시작'}
+              variant="primary"
+              size="lg"
+              onPress={handleGeneratePrompt}
+              loading={isProcessing}
+              disabled={isProcessing}
+              fullWidth
+            />
+
+            {/* Progress Indicator */}
+            {isProcessing && progress && (
+              <Card variant="outlined" className="mt-4">
+                <View className="items-center py-4">
+                  <ActivityIndicator size="large" color="#3B82F6" />
+                  <Text className="text-lg font-semibold text-gray-900 mt-3">
+                    {progress.message}
+                  </Text>
+                  <Text className="text-sm text-gray-600 mt-1">
+                    {progress.progress.toFixed(0)}%
+                  </Text>
+                  <View className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                    <View
+                      className="bg-blue-600 h-2 rounded-full"
+                      style={{ width: `${progress.progress}%` }}
+                    />
+                  </View>
+                  <Button
+                    title="취소"
+                    variant="outline"
+                    size="sm"
+                    onPress={cancelAnalysis}
+                    className="mt-4"
+                  />
+                </View>
+              </Card>
+            )}
+          </View>
         )}
 
-        {/* Step 3: Prompt Preview */}
+        {/* Step 4: Results */}
         {generatedPrompt && (
           <View className="mb-4">
-            <Text className="text-xl font-bold mb-4">Step 3. 프롬프트 확인 및 복사</Text>
+            <Text className="text-xl font-bold mb-4">Step 4. 결과 확인</Text>
+
+            {/* AI Response (Local LLM mode only) */}
+            {llmMode === 'local' && aiResponse && (
+              <Card variant="elevated" className="mb-4">
+                <View className="flex-row items-center mb-3">
+                  <Ionicons name="sparkles" size={24} color="#3B82F6" />
+                  <Text className="text-lg font-bold text-gray-900 ml-2">
+                    AI 분석 결과
+                  </Text>
+                </View>
+                <View className="bg-blue-50 p-4 rounded-lg">
+                  <Text className="text-gray-900 leading-6">{aiResponse}</Text>
+                </View>
+              </Card>
+            )}
+
+            {/* Prompt Preview */}
+            <View className="mb-2">
+              <Text className="text-base font-semibold text-gray-700 mb-2">
+                {llmMode === 'local' ? '사용된 프롬프트' : '생성된 프롬프트'}
+              </Text>
+            </View>
             <PromptPreview
               prompt={generatedPrompt}
               onEdit={setGeneratedPrompt}
               editable
             />
             <Button
-              title="새로 생성"
+              title={llmMode === 'clipboard' ? '새로 생성' : '다시 분석'}
               variant="outline"
               onPress={handleGeneratePrompt}
               fullWidth
               className="mt-3"
+              disabled={isProcessing}
             />
 
             {/* Save to History Section */}

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LLMConfig, LLMMode, LocalLLMConfig } from '@/types/llm';
 
 const SETTINGS_KEY = '@portfolio_settings';
 
@@ -22,6 +23,11 @@ export interface AppSettings {
   // Feature flags (for future use)
   enableHaptics: boolean;
   enableAnalytics: boolean;
+
+  // LLM settings (신규)
+  llmConfig: LLMConfig;
+  showBatteryWarning: boolean;
+  showStorageWarning: boolean;
 }
 
 interface SettingsState extends AppSettings {
@@ -31,6 +37,13 @@ interface SettingsState extends AppSettings {
   setThemeMode: (mode: ThemeMode) => Promise<void>;
   setEnableHaptics: (enabled: boolean) => Promise<void>;
   setEnableAnalytics: (enabled: boolean) => Promise<void>;
+
+  // LLM Actions (신규)
+  setLLMMode: (mode: LLMMode) => Promise<void>;
+  setLocalLLMConfig: (config: Partial<LocalLLMConfig>) => Promise<void>;
+  setShowBatteryWarning: (show: boolean) => Promise<void>;
+  setShowStorageWarning: (show: boolean) => Promise<void>;
+
   loadSettings: () => Promise<void>;
   resetSettings: () => Promise<void>;
 }
@@ -43,6 +56,20 @@ const DEFAULT_SETTINGS: AppSettings = {
   appVersion: '1.0.0',
   enableHaptics: true,
   enableAnalytics: false,
+
+  // LLM 기본 설정
+  llmConfig: {
+    mode: 'clipboard', // 기본은 클립보드 모드
+    localConfig: {
+      modelType: 'llava-1.5-7b-q4',
+      enableGPU: false,
+      maxTokens: 512,
+      temperature: 0.7,
+      contextSize: 2048,
+    },
+  },
+  showBatteryWarning: true,
+  showStorageWarning: true,
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -70,6 +97,34 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   setEnableAnalytics: async (enabled) => {
     set({ enableAnalytics: enabled });
+    await saveSettings(get());
+  },
+
+  // LLM Actions (신규)
+  setLLMMode: async (mode) => {
+    set((state) => ({
+      llmConfig: { ...state.llmConfig, mode },
+    }));
+    await saveSettings(get());
+  },
+
+  setLocalLLMConfig: async (config) => {
+    set((state) => ({
+      llmConfig: {
+        ...state.llmConfig,
+        localConfig: { ...state.llmConfig.localConfig!, ...config },
+      },
+    }));
+    await saveSettings(get());
+  },
+
+  setShowBatteryWarning: async (show) => {
+    set({ showBatteryWarning: show });
+    await saveSettings(get());
+  },
+
+  setShowStorageWarning: async (show) => {
+    set({ showStorageWarning: show });
     await saveSettings(get());
   },
 
@@ -102,6 +157,11 @@ async function saveSettings(settings: Partial<AppSettings>): Promise<void> {
       appVersion: settings.appVersion ?? DEFAULT_SETTINGS.appVersion,
       enableHaptics: settings.enableHaptics ?? DEFAULT_SETTINGS.enableHaptics,
       enableAnalytics: settings.enableAnalytics ?? DEFAULT_SETTINGS.enableAnalytics,
+
+      // LLM 설정 저장
+      llmConfig: settings.llmConfig ?? DEFAULT_SETTINGS.llmConfig,
+      showBatteryWarning: settings.showBatteryWarning ?? DEFAULT_SETTINGS.showBatteryWarning,
+      showStorageWarning: settings.showStorageWarning ?? DEFAULT_SETTINGS.showStorageWarning,
     };
 
     await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsToSave));

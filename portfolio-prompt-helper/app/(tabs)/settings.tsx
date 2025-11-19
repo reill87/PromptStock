@@ -7,10 +7,12 @@ import {
   Switch,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSettingsStore, ImageQuality, ThemeMode } from '@/store/settingsStore';
+import { useModelStore } from '@/store/modelStore';
 import { DEFAULT_TEMPLATES } from '@/constants/templates';
 import { useUIStore } from '@/store/uiStore';
 import { useTheme } from '@/hooks/useTheme';
@@ -22,6 +24,7 @@ import {
 } from '@/utils/dataManagement';
 import { getStorageStats } from '@/utils/storage';
 import { getCustomTemplateStats } from '@/utils/templateStorage';
+import Slider from '@react-native-community/slider';
 
 export default function SettingsScreen() {
   const {
@@ -29,13 +32,18 @@ export default function SettingsScreen() {
     imageQuality,
     enableHaptics,
     appVersion,
+    llmConfig,
     setDefaultTemplate,
     setImageQuality,
     setEnableHaptics,
+    setLocalLLMConfig,
+    setShowBatteryWarning,
+    setShowStorageWarning,
     loadSettings,
     resetSettings,
   } = useSettingsStore();
 
+  const { installedModel } = useModelStore();
   const { showToast } = useUIStore();
   const { themeMode, setTheme, isDark } = useTheme();
 
@@ -248,6 +256,204 @@ export default function SettingsScreen() {
           ))}
         </View>
       </View>
+
+      {/* LLM Settings */}
+      {Platform.OS !== 'web' && (
+        <View className="bg-white mt-4 px-4 py-3 border-b border-gray-200">
+          <Text className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            로컬 AI 설정
+          </Text>
+
+          {/* Model Status */}
+          <View className="bg-blue-50 rounded-lg p-4 mb-4">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-1">
+                <Text className="text-xs text-gray-600 mb-1">설치된 모델</Text>
+                <Text className="text-sm font-semibold text-gray-900">
+                  {installedModel
+                    ? installedModel.modelId
+                    : '모델 미설치'}
+                </Text>
+                {installedModel && (
+                  <Text className="text-xs text-gray-500 mt-1">
+                    {(
+                      (installedModel.files.modelSize +
+                        installedModel.files.mmprojSize) /
+                      1024 /
+                      1024 /
+                      1024
+                    ).toFixed(1)}{' '}
+                    GB
+                  </Text>
+                )}
+              </View>
+              {installedModel && (
+                <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+              )}
+            </View>
+          </View>
+
+          {/* Temperature Setting */}
+          <View className="py-3 border-b border-gray-100">
+            <View className="flex-row items-center justify-between mb-3">
+              <View className="flex-1">
+                <Text className="text-sm font-medium text-gray-900">
+                  Temperature
+                </Text>
+                <Text className="text-xs text-gray-500 mt-0.5">
+                  창의성 조절 (낮음: 일관성, 높음: 창의성)
+                </Text>
+              </View>
+              <Text className="text-sm font-bold text-blue-600">
+                {llmConfig.localConfig?.temperature?.toFixed(2) || '0.70'}
+              </Text>
+            </View>
+            <Slider
+              value={llmConfig.localConfig?.temperature || 0.7}
+              onValueChange={(value) =>
+                setLocalLLMConfig({ temperature: value })
+              }
+              minimumValue={0.0}
+              maximumValue={1.0}
+              step={0.05}
+              minimumTrackTintColor="#3B82F6"
+              maximumTrackTintColor="#D1D5DB"
+              thumbTintColor="#3B82F6"
+            />
+            <View className="flex-row justify-between">
+              <Text className="text-xs text-gray-400">0.0</Text>
+              <Text className="text-xs text-gray-400">1.0</Text>
+            </View>
+          </View>
+
+          {/* Max Tokens Setting */}
+          <View className="py-3 border-b border-gray-100">
+            <View className="flex-row items-center justify-between mb-3">
+              <View className="flex-1">
+                <Text className="text-sm font-medium text-gray-900">
+                  Max Tokens
+                </Text>
+                <Text className="text-xs text-gray-500 mt-0.5">
+                  최대 응답 길이 (높을수록 긴 응답)
+                </Text>
+              </View>
+              <Text className="text-sm font-bold text-blue-600">
+                {llmConfig.localConfig?.maxTokens || 512}
+              </Text>
+            </View>
+            <Slider
+              value={llmConfig.localConfig?.maxTokens || 512}
+              onValueChange={(value) =>
+                setLocalLLMConfig({ maxTokens: Math.round(value) })
+              }
+              minimumValue={128}
+              maximumValue={2048}
+              step={128}
+              minimumTrackTintColor="#3B82F6"
+              maximumTrackTintColor="#D1D5DB"
+              thumbTintColor="#3B82F6"
+            />
+            <View className="flex-row justify-between">
+              <Text className="text-xs text-gray-400">128</Text>
+              <Text className="text-xs text-gray-400">2048</Text>
+            </View>
+          </View>
+
+          {/* Context Size Setting */}
+          <View className="py-3 border-b border-gray-100">
+            <Text className="text-sm font-medium text-gray-900 mb-2">
+              Context Size
+            </Text>
+            <Text className="text-xs text-gray-500 mb-3">
+              컨텍스트 창 크기 (높을수록 메모리 사용 증가)
+            </Text>
+
+            {[1024, 2048, 4096].map((size) => (
+              <TouchableOpacity
+                key={size}
+                onPress={() => setLocalLLMConfig({ contextSize: size })}
+                className="flex-row items-center justify-between py-2">
+                <View className="flex-row items-center">
+                  <Text className="text-sm text-gray-900">{size}</Text>
+                  {size > 2048 && (
+                    <View className="ml-2 bg-orange-100 px-2 py-0.5 rounded">
+                      <Text className="text-xs font-semibold text-orange-700">
+                        메모리 많이 사용
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                {(llmConfig.localConfig?.contextSize || 2048) === size && (
+                  <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Warning Settings */}
+          <View className="py-3 border-b border-gray-100">
+            <View className="flex-row items-center justify-between mb-3">
+              <View className="flex-1">
+                <Text className="text-sm font-medium text-gray-900">
+                  배터리 경고 표시
+                </Text>
+                <Text className="text-xs text-gray-500 mt-0.5">
+                  로컬 AI 사용 시 배터리 소모 경고
+                </Text>
+              </View>
+              <Switch
+                value={llmConfig.localConfig?.showBatteryWarning ?? true}
+                onValueChange={setShowBatteryWarning}
+                trackColor={{ false: '#D1D5DB', true: '#93C5FD' }}
+                thumbColor={
+                  llmConfig.localConfig?.showBatteryWarning ?? true
+                    ? '#3B82F6'
+                    : '#F3F4F6'
+                }
+              />
+            </View>
+          </View>
+
+          <View className="py-3">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-1">
+                <Text className="text-sm font-medium text-gray-900">
+                  저장 공간 경고 표시
+                </Text>
+                <Text className="text-xs text-gray-500 mt-0.5">
+                  모델 다운로드 시 저장 공간 경고
+                </Text>
+              </View>
+              <Switch
+                value={llmConfig.localConfig?.showStorageWarning ?? true}
+                onValueChange={setShowStorageWarning}
+                trackColor={{ false: '#D1D5DB', true: '#93C5FD' }}
+                thumbColor={
+                  llmConfig.localConfig?.showStorageWarning ?? true
+                    ? '#3B82F6'
+                    : '#F3F4F6'
+                }
+              />
+            </View>
+          </View>
+
+          {/* Info Message */}
+          <View className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-4">
+            <View className="flex-row items-start">
+              <Ionicons
+                name="information-circle"
+                size={20}
+                color="#D97706"
+                style={{ marginTop: 2 }}
+              />
+              <Text className="text-xs text-yellow-800 ml-2 flex-1">
+                로컬 AI는 iOS/Android에서만 사용 가능합니다. 높은 설정값은 더 나은
+                결과를 제공하지만 배터리와 메모리를 더 많이 사용합니다.
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* Theme Settings */}
       <View className="bg-white mt-4 px-4 py-3 border-b border-gray-200">

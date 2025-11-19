@@ -38,7 +38,8 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET"
       ]
     },
     "web": {
@@ -53,6 +54,18 @@
         {
           "photosPermission": "프롬프트 생성을 위해 갤러리 이미지를 선택합니다.",
           "cameraPermission": "프롬프트 생성을 위해 이미지를 촬영합니다."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.0"
+          },
+          "android": {
+            "minSdkVersion": 24,
+            "compileSdkVersion": 34
+          }
         }
       ]
     ],

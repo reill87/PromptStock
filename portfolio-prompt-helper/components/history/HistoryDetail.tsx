@@ -79,10 +79,31 @@ export function HistoryDetail({
                 <Ionicons name="document-text" size={24} color="#3B82F6" />
               </View>
               <View className="flex-1">
-                <Text className="text-xl font-bold text-gray-900">
-                  {analysis.templateName}
-                </Text>
-                <Text className="text-sm text-gray-500 mt-1">
+                <View className="flex-row items-center gap-2 mb-1">
+                  <Text className="text-xl font-bold text-gray-900">
+                    {analysis.templateName}
+                  </Text>
+                  {analysis.llmMode && (
+                    <View
+                      className={`px-2 py-1 rounded ${
+                        analysis.llmMode === 'local'
+                          ? 'bg-green-100'
+                          : 'bg-gray-100'
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs font-semibold ${
+                          analysis.llmMode === 'local'
+                            ? 'text-green-700'
+                            : 'text-gray-700'
+                        }`}
+                      >
+                        {analysis.llmMode === 'local' ? '로컬 AI' : '클립보드'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text className="text-sm text-gray-500">
                   {formatDate(analysis.createdAt)}
                 </Text>
               </View>
