@@ -5,7 +5,7 @@
  */
 
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { initLlama } from 'llama.rn';
 import type { LlamaContext } from 'llama.rn';
 import { LLMClient, LLMResponse, LLMGenerationProgress } from '@/types/llm';

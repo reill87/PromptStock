@@ -5,7 +5,7 @@
 
 import { Platform } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { ModelConfig } from '@/types/model';
 
 /**

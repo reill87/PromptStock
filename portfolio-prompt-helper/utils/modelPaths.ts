@@ -2,7 +2,7 @@
  * 모델 경로 관리 유틸리티
  */
 
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { LLMModelType } from '@/types/model';
 import { getModelConfig } from '@/constants/models';
 
