@@ -93,14 +93,12 @@ function RootLayoutNav() {
 
             // 파일이 있으면 자동으로 등록
             const autoInstalledModel = {
-              modelId: 'llava-v1.5-7b-q4' as const,
+              modelId: 'llava-1.5-7b-q4' as const,
               installedAt: new Date().toISOString(),
               version: '1.5',
               files: {
                 modelPath,
                 mmprojPath,
-                modelSize: modelInfo.size || 0,
-                mmprojSize: mmprojInfo.size || 0,
               },
               diskUsage: (modelInfo.size || 0) + (mmprojInfo.size || 0),
             };
