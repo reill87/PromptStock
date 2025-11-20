@@ -16,19 +16,19 @@ function simplifyPromptForVisionLLM(originalPrompt: string, template: Template):
   // Vision LLM은 영어를 더 잘 처리하므로 영어로 질문하고 한국어로 답변 요청
   const simplifiedPrompts: Record<string, string> = {
     'risk-analysis':
-      `Describe what you see in this image. List all the stock names and numbers visible. Answer in Korean.`,
+      `Describe this portfolio image in detail. List ALL stock names, percentages, and values you can see. Provide complete information. Answer in Korean.`,
 
     'rebalancing':
-      `Describe what you see in this image. List all the stock names and numbers visible. Answer in Korean.`,
+      `Describe this portfolio image in detail. List ALL stock names, percentages, and values you can see. Provide complete information. Answer in Korean.`,
 
     'checklist':
-      `Describe what you see in this image. List all the stock names visible. Answer in Korean.`,
+      `Describe this portfolio image in detail. List ALL stock names and information you can see. Provide complete information. Answer in Korean.`,
 
     'sector-balance':
-      `Describe what you see in this image. List all the stock names visible. Answer in Korean.`,
+      `Describe this portfolio image in detail. List ALL stock names and information you can see. Provide complete information. Answer in Korean.`,
 
     'profit-improvement':
-      `Describe what you see in this image. List all the stock names and numbers visible. Answer in Korean.`,
+      `Describe this portfolio image in detail. List ALL stock names, percentages, and values you can see. Provide complete information. Answer in Korean.`,
   };
 
   // 템플릿 ID에 맞는 단순화된 프롬프트 사용, 없으면 기본 프롬프트

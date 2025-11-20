@@ -294,11 +294,11 @@ export class LocalLLMClient implements LLMClient {
               content: messageContent,
             },
           ],
-          n_predict: this.config.maxTokens || 512,
+          n_predict: this.config.maxTokens || 2048, // 512 → 2048로 증가
           temperature: this.config.temperature || 0.7,
           top_k: 40,
           top_p: 0.95,
-          stop: ['</s>', '\n\n\n'], // 중지 토큰
+          stop: ['</s>'], // '\n\n\n' 제거 - 너무 일찍 중단됨
         }),
         GENERATION_TIMEOUT_MS,
         '응답 생성 시간 초과 (5분). 프롬프트를 더 짧게 하거나 이미지 개수를 줄여주세요.'
