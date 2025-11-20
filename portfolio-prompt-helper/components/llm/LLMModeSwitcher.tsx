@@ -40,13 +40,8 @@ export function LLMModeSwitcher() {
   ];
 
   const handleModeSelect = async (mode: LLMMode) => {
-    // 로컬 모드 선택 시 모델 설치 확인
-    if (mode === 'local' && !installedModel) {
-      // 모델이 설치되지 않았으면 모드 변경하지 않음
-      // UI에서 다운로드 섹션으로 유도
-      return;
-    }
-
+    // 모델이 없어도 로컬 모드 선택 가능 (다운로드 섹션 표시를 위해)
+    // 실제 분석 시작 시 모델 체크는 useLLMClient에서 처리
     await setLLMMode(mode);
   };
 
@@ -58,7 +53,8 @@ export function LLMModeSwitcher() {
 
       {modes.map(({ mode, icon, label, description, badge }) => {
         const isSelected = llmMode === mode;
-        const isDisabled = mode === 'local' && !installedModel;
+        // 모델이 없어도 선택 가능하게 변경 (다운로드를 위해)
+        const isDisabled = false;
 
         return (
           <Pressable
@@ -70,8 +66,6 @@ export function LLMModeSwitcher() {
               ${
                 isSelected
                   ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                  : isDisabled
-                  ? 'border-gray-200 dark:border-gray-700 opacity-50'
                   : 'border-gray-200 dark:border-gray-700'
               }
             `}
@@ -79,7 +73,7 @@ export function LLMModeSwitcher() {
             <Ionicons
               name={icon}
               size={24}
-              color={isSelected ? '#3B82F6' : isDisabled ? '#9CA3AF' : '#6B7280'}
+              color={isSelected ? '#3B82F6' : '#6B7280'}
             />
 
             <View className="ml-3 flex-1">
@@ -88,8 +82,6 @@ export function LLMModeSwitcher() {
                   className={`font-semibold ${
                     isSelected
                       ? 'text-blue-600 dark:text-blue-400'
-                      : isDisabled
-                      ? 'text-gray-400'
                       : 'text-gray-900 dark:text-gray-100'
                   }`}
                 >

@@ -5,7 +5,7 @@
  */
 
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { initLlama } from 'llama.rn';
 import type { LlamaContext } from 'llama.rn';
 import { LLMClient, LLMResponse, LLMGenerationProgress } from '@/types/llm';
@@ -30,7 +30,7 @@ function withTimeout<T>(
 }
 
 export class LocalLLMClient implements LLMClient {
-  name = 'LLaVA 1.5 7B (로컬)';
+  name = 'Vision LLM (로컬)';
   mode = 'local' as const;
   supportsImages = true;
 
@@ -98,14 +98,15 @@ export class LocalLLMClient implements LLMClient {
         contextSize: this.config.contextSize || 2048,
       });
 
-      // llama.rn 초기화 (타임아웃 2분)
+      // Step 1: llama.rn 기본 모델 초기화 (타임아웃 2분)
       this.context = await withTimeout(
         initLlama({
           model: this.modelPath,
-          mmproj: this.mmprojPath, // Vision projector
+          // mmproj는 initMultimodal에서 별도로 로드
           use_mlock: true, // 메모리 잠금 (성능 향상)
           n_ctx: this.config.contextSize || 2048, // 컨텍스트 크기
           n_gpu_layers: 0, // CPU만 사용 (배터리 고려)
+          ctx_shift: false, // Multimodal 필수: 미디어 토큰 위치 유지
           seed: 42, // 재현 가능한 결과
         }),
         120000,
@@ -114,11 +115,49 @@ export class LocalLLMClient implements LLMClient {
 
       this.onProgress?.({
         stage: 'initializing',
+        progress: 60,
+        message: 'Vision 모델 로딩 중...',
+      });
+
+      // Step 2: Multimodal (Vision) 초기화
+      console.log('🔧 Starting multimodal initialization...');
+      console.log('📂 mmproj path:', this.mmprojPath);
+
+      const multimodalSuccess = await withTimeout(
+        this.context.initMultimodal({
+          path: this.mmprojPath,
+          use_gpu: true, // GPU 사용 (이미지 처리 성능 향상)
+        }),
+        60000,
+        'Vision 모델 로딩 시간 초과 (1분). mmproj 파일이 손상되었을 수 있습니다.'
+      );
+
+      console.log('✅ initMultimodal returned:', multimodalSuccess);
+
+      // Multimodal 활성화 확인
+      const isEnabled = await this.context.isMultimodalEnabled();
+      console.log('🔍 isMultimodalEnabled:', isEnabled);
+
+      if (!isEnabled) {
+        throw new Error(
+          'Multimodal 초기화 실패. mmproj 파일이 손상되었거나 모델과 호환되지 않습니다.\n\n' +
+          '해결 방법:\n' +
+          '1. 모델을 다시 다운로드해주세요\n' +
+          '2. LLaVA 1.5 7B Q4 모델인지 확인해주세요'
+        );
+      }
+
+      // Multimodal 지원 확인
+      const multimodalSupport = await this.context.getMultimodalSupport();
+      console.log('📊 Multimodal support:', multimodalSupport);
+
+      this.onProgress?.({
+        stage: 'initializing',
         progress: 100,
         message: '모델 준비 완료',
       });
 
-      console.log('LocalLLMClient initialized successfully');
+      console.log('LocalLLMClient initialized successfully with vision support');
     } catch (error: any) {
       console.error('Failed to initialize llama.rn:', error);
       this.context = null;
@@ -199,18 +238,62 @@ export class LocalLLMClient implements LLMClient {
         return `data:image/jpeg;base64,${base64}`;
       });
 
-      console.log('Starting completion with:', {
-        promptLength: prompt.length,
-        imageCount: imageDataURLs?.length || 0,
-        maxTokens: this.config.maxTokens || 512,
-        temperature: this.config.temperature || 0.7,
+      // 🔍 상세 디버깅 로그
+      console.log('========== LocalLLM Generation Debug ==========');
+      console.log('📝 Original prompt length:', prompt.length);
+      console.log('📝 Original prompt preview:', prompt.substring(0, 100) + '...');
+      console.log('🖼️  Images received:', images?.length || 0);
+      console.log('🖼️  Image data URLs created:', imageDataURLs?.length || 0);
+
+      if (imageDataURLs && imageDataURLs.length > 0) {
+        console.log('🖼️  First image info:', {
+          startsWithData: imageDataURLs[0].startsWith('data:'),
+          length: imageDataURLs[0].length,
+          prefix: imageDataURLs[0].substring(0, 50) + '...'
+        });
+      }
+
+      // messages 형식으로 content 구성
+      // llama.rn은 messages API를 통해 자동으로 LLaVA 템플릿 적용
+      const messageContent: any[] = [];
+
+      // 이미지가 있으면 먼저 추가
+      if (imageDataURLs && imageDataURLs.length > 0) {
+        imageDataURLs.forEach((url) => {
+          messageContent.push({
+            type: 'image_url',
+            image_url: { url },
+          });
+        });
+      }
+
+      // 텍스트 프롬프트 추가
+      messageContent.push({
+        type: 'text',
+        text: prompt,
       });
 
-      // llama.rn completion 실행 (타임아웃 5분)
+      console.log('📋 Message content structure:', {
+        imageCount: imageDataURLs?.length || 0,
+        hasText: true,
+        totalContentItems: messageContent.length,
+      });
+      console.log('⚙️  Completion params:', {
+        maxTokens: this.config.maxTokens || 512,
+        temperature: this.config.temperature || 0.7,
+        usingMessagesAPI: true,
+      });
+      console.log('===============================================');
+
+      // llama.rn completion 실행 (messages API 사용, 타임아웃 5분)
       const result = await withTimeout(
         this.context!.completion({
-          prompt,
-          images: imageDataURLs,
+          messages: [
+            {
+              role: 'user',
+              content: messageContent,
+            },
+          ],
           n_predict: this.config.maxTokens || 512,
           temperature: this.config.temperature || 0.7,
           top_k: 40,
@@ -229,10 +312,15 @@ export class LocalLLMClient implements LLMClient {
 
       const processingTime = Date.now() - startTime;
 
-      console.log(`Generation completed in ${processingTime}ms`, {
+      console.log('========== Generation Result Debug ==========');
+      console.log(`⏱️  Processing time: ${processingTime}ms`);
+      console.log('📊 Result stats:', {
         tokenCount: result.tokens?.length,
         textLength: result.text.length,
       });
+      console.log('📄 Generated text (first 200 chars):');
+      console.log(result.text.substring(0, 200));
+      console.log('============================================');
 
       // 빈 응답 체크
       const responseText = result.text.trim();

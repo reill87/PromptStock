@@ -4,9 +4,10 @@
  * Factory 패턴을 사용하여 적절한 LLM 클라이언트 반환
  */
 
+import { Platform } from 'react-native';
 import { LLMClient, LLMMode, LLMGenerationProgress } from '@/types/llm';
 import { ClipboardClient } from './ClipboardClient';
-import { LocalLLMClient } from './LocalLLMClient';
+// LocalLLMClient는 동적으로 import (네이티브 모듈 오류 방지)
 
 /**
  * LLM 클라이언트 팩토리
@@ -51,20 +52,33 @@ export class LLMClientFactory {
         return new ClipboardClient();
 
       case 'local':
+        // 웹 플랫폼에서는 로컬 LLM 미지원
+        if (Platform.OS === 'web') {
+          throw new Error('로컬 LLM은 웹 플랫폼에서 지원되지 않습니다. 네이티브 앱을 사용해주세요.');
+        }
+
         if (!options?.modelPath || !options?.mmprojPath) {
           throw new Error('로컬 모드에는 modelPath와 mmprojPath가 필요합니다');
         }
 
-        return new LocalLLMClient(
-          options.modelPath,
-          options.mmprojPath,
-          {
-            maxTokens: options.maxTokens,
-            temperature: options.temperature,
-            contextSize: options.contextSize,
-          },
-          progressCallback
-        );
+        // 동적 import로 네이티브 모듈 로드
+        try {
+          const { LocalLLMClient } = require('./LocalLLMClient');
+          return new LocalLLMClient(
+            options.modelPath,
+            options.mmprojPath,
+            {
+              maxTokens: options.maxTokens,
+              temperature: options.temperature,
+              contextSize: options.contextSize,
+            },
+            progressCallback
+          );
+        } catch (error: any) {
+          throw new Error(
+            `로컬 LLM 초기화 실패: ${error.message}\n\nExpo Go에서는 로컬 AI를 사용할 수 없습니다. Development Build를 생성해주세요.`
+          );
+        }
 
       default:
         throw new Error(`알 수 없는 LLM 모드: ${mode}`);

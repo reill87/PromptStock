@@ -8,10 +8,48 @@ import { ModelConfig, LLMModelType } from '@/types/model';
  * 지원하는 모델 목록
  */
 export const SUPPORTED_MODELS: Record<LLMModelType, ModelConfig> = {
+  'smolvlm2-2.2b-q4': {
+    id: 'smolvlm2-2.2b-q4',
+    displayName: 'SmolVLM2 2.2B Q4 (권장)',
+    description: '가볍고 빠른 비전 언어 모델. 모바일에 최적화됨',
+
+    requirements: {
+      minRAM: 3, // GB
+      minStorage: 2, // GB
+      minOSVersion: {
+        ios: '15.0',
+        android: 24,
+      },
+    },
+
+    files: {
+      model: {
+        name: 'SmolVLM2-2.2B-Instruct-Q4_K_M.gguf',
+        url: 'https://huggingface.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF/resolve/main/SmolVLM2-2.2B-Instruct-Q4_K_M.gguf',
+        size: 1_300_000_000, // 1.3GB
+        checksum: '',
+        required: true,
+      },
+      mmproj: {
+        name: 'mmproj-SmolVLM2-2.2B-Instruct-Q8_0.gguf',
+        url: 'https://huggingface.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF/resolve/main/mmproj-SmolVLM2-2.2B-Instruct-Q8_0.gguf',
+        size: 600_000_000, // 600MB
+        checksum: '',
+        required: true,
+      },
+    },
+
+    performance: {
+      avgImageProcessingTime: 5, // seconds
+      avgTokensPerSecond: 20,
+      batteryImpact: 'medium',
+    },
+  },
+
   'llava-1.5-7b-q4': {
     id: 'llava-1.5-7b-q4',
-    displayName: 'LLaVA 1.5 7B Q4 (권장)',
-    description: '균형 잡힌 성능과 속도. 대부분의 디바이스에서 사용 가능',
+    displayName: 'LLaVA 1.5 7B Q4 (실험적)',
+    description: '균형 잡힌 성능과 속도. llama.rn 호환성 제한적',
 
     requirements: {
       minRAM: 4, // GB
@@ -89,7 +127,7 @@ export const SUPPORTED_MODELS: Record<LLMModelType, ModelConfig> = {
 /**
  * 기본 모델 (권장)
  */
-export const DEFAULT_MODEL: LLMModelType = 'llava-1.5-7b-q4';
+export const DEFAULT_MODEL: LLMModelType = 'smolvlm2-2.2b-q4';
 
 /**
  * 모델 ID로 설정 가져오기

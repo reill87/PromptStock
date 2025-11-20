@@ -3,7 +3,7 @@
  * 로컬 LLM 모델의 다운로드, 설치, 삭제를 관리
  */
 
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { getModelConfig, getTotalModelSize } from '@/constants/models';
 import { InstalledModel, LLMModelType } from '@/types/model';
