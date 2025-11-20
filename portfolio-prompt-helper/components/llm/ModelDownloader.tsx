@@ -18,17 +18,18 @@ export function ModelDownloader() {
   const showToast = useUIStore((state) => state.showToast);
 
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState(DEFAULT_MODEL);
 
   const handleDownload = async () => {
     try {
       // 저장 공간 체크
-      const hasEnough = await ModelManager.hasEnoughStorage(DEFAULT_MODEL);
+      const hasEnough = await ModelManager.hasEnoughStorage(selectedModelId);
       if (!hasEnough) {
         showToast('error', '저장 공간이 부족합니다');
         return;
       }
 
-      await ModelManager.downloadModel(DEFAULT_MODEL, (progress) => {
+      await ModelManager.downloadModel(selectedModelId, (progress) => {
         console.log(`Download progress: ${progress.toFixed(1)}%`);
       });
 
@@ -90,9 +91,14 @@ export function ModelDownloader() {
     );
   }
 
-  const config = SUPPORTED_MODELS[DEFAULT_MODEL];
-  const totalSize = getTotalModelSize(DEFAULT_MODEL);
+  const config = SUPPORTED_MODELS[selectedModelId];
+  const totalSize = getTotalModelSize(selectedModelId);
   const isDownloading = downloadState?.status === 'downloading';
+
+  // 모델 목록 (LLaVA 제외 - 호환성 문제)
+  const availableModels = Object.entries(SUPPORTED_MODELS).filter(
+    ([id]) => !id.includes('llava')
+  );
 
   return (
     <View className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -100,8 +106,49 @@ export function ModelDownloader() {
         로컬 AI 모델 다운로드
       </Text>
 
+      {/* 모델 선택 */}
+      <View className="mb-3">
+        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+          모델 선택:
+        </Text>
+        {availableModels.map(([id, modelConfig]) => (
+          <Pressable
+            key={id}
+            onPress={() => setSelectedModelId(id as any)}
+            className={`p-3 mb-2 rounded-lg border ${
+              selectedModelId === id
+                ? 'bg-blue-50 border-blue-500 dark:bg-blue-900/20'
+                : 'bg-white border-gray-200 dark:bg-gray-700 dark:border-gray-600'
+            }`}
+          >
+            <View className="flex-row items-center justify-between">
+              <View className="flex-1">
+                <Text
+                  className={`font-semibold ${
+                    selectedModelId === id
+                      ? 'text-blue-700 dark:text-blue-300'
+                      : 'text-gray-900 dark:text-gray-100'
+                  }`}
+                >
+                  {modelConfig.displayName}
+                </Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {modelConfig.description}
+                </Text>
+                <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  크기: {formatBytes(getTotalModelSize(id as any))}
+                </Text>
+              </View>
+              {selectedModelId === id && (
+                <Ionicons name="checkmark-circle" size={24} color="#3B82F6" />
+              )}
+            </View>
+          </Pressable>
+        ))}
+      </View>
+
       <Text className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-        {config.description}
+        선택된 모델: {config.displayName}
       </Text>
 
       <View className="space-y-1 mb-4">
