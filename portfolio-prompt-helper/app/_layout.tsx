@@ -66,7 +66,19 @@ function RootLayoutNav() {
         const currentModel = useModelStore.getState().installedModel;
 
         if (currentModel) {
-          // 케이스 1: AsyncStorage에 정보 있음 → 파일 검증 및 modelId 수정
+          // 케이스 1: AsyncStorage에 정보 있음 → 파일 검증 및 호환성 확인
+
+          // LLaVA 모델은 llama.rn과 호환성 문제가 있으므로 제거
+          const isLLaVAModel =
+            (currentModel.modelId as string).includes('llava');
+
+          if (isLLaVAModel) {
+            console.warn('⚠️ LLaVA 모델은 llama.rn과 호환성 문제가 있어 제거합니다.');
+            console.log('ℹ️ SmolVLM2 모델을 다운로드해주세요.');
+            await setInstalledModel(null);
+            return;
+          }
+
           const filesExist = await ModelManager.verifyModelFiles(currentModel);
 
           if (!filesExist) {
@@ -74,19 +86,7 @@ function RootLayoutNav() {
             // 파일이 없으면 상태 초기화
             await setInstalledModel(null);
           } else {
-            // 파일은 있는데 modelId가 잘못되었을 수 있음 (v1.5 vs 1.5)
-            // TypeScript를 위해 문자열로 비교
-            if ((currentModel.modelId as string) === 'llava-v1.5-7b-q4') {
-              console.log('⚠️ Fixing incorrect modelId: llava-v1.5-7b-q4 → llava-1.5-7b-q4');
-              const correctedModel = {
-                ...currentModel,
-                modelId: 'llava-1.5-7b-q4' as const,
-              };
-              await setInstalledModel(correctedModel);
-              console.log('✅ Model ID corrected successfully');
-            } else {
-              console.log('Model files verified successfully');
-            }
+            console.log('Model files verified successfully');
           }
         } else {
           // 케이스 2: AsyncStorage에 정보 없음 → 파일이 있는지 확인 (스크립트로 복사한 경우)

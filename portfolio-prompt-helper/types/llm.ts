@@ -13,7 +13,10 @@ export type LLMMode = 'clipboard' | 'local';
 /**
  * 로컬 LLM 모델 타입
  */
-export type LLMModelType = 'llava-1.5-7b-q4' | 'llava-1.5-7b-q8';
+export type LLMModelType =
+  | 'smolvlm2-2.2b-q4'  // SmolVLM2 2.2B Q4 (권장, llama.rn 공식 지원)
+  | 'llava-1.5-7b-q4'   // LLaVA 1.5 7B Q4 (실험적, 호환성 제한적)
+  | 'llava-1.5-7b-q8';  // LLaVA 1.5 7B Q8 (실험적, 호환성 제한적)
 
 /**
  * 로컬 LLM 설정

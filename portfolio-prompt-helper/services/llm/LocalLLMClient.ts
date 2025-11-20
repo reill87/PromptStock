@@ -30,7 +30,7 @@ function withTimeout<T>(
 }
 
 export class LocalLLMClient implements LLMClient {
-  name = 'LLaVA 1.5 7B (로컬)';
+  name = 'Vision LLM (로컬)';
   mode = 'local' as const;
   supportsImages = true;
 
