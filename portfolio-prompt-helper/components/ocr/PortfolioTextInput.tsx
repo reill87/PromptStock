@@ -7,7 +7,7 @@ import { View, Text, TextInput, Pressable } from 'react-native';
 import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import type { OCRResult } from '@/types/ocr';
-import { Card } from '@/components/ui/Card';
+import { Card } from '@/components/common/Card';
 
 interface PortfolioTextInputProps {
   /** OCR 결과 */
