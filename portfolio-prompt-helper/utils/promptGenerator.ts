@@ -12,57 +12,63 @@ export interface PromptGeneratorOptions {
  * 핵심 질문만 간단명료하게 추출
  */
 function simplifyPromptForVisionLLM(originalPrompt: string, template: Template): string {
-  // 템플릿별 단순화된 프롬프트
+  // 템플릿별 단순화된 프롬프트 (영어 + 한국어 혼합)
+  // Vision LLM은 영어를 더 잘 처리하므로 영어로 질문하고 한국어로 답변 요청
   const simplifiedPrompts: Record<string, string> = {
     'risk-analysis':
-      `이 포트폴리오 이미지를 분석해주세요.
+      `Look at this portfolio image carefully.
 
-1. 어떤 종목들이 보이나요? (종목명과 대략적인 비중)
-2. 섹터 집중도나 위험 요소가 있다면 무엇인가요?
-3. 포트폴리오 개선을 위한 간단한 제안을 해주세요.
+Please answer in Korean:
+1. What stocks do you see? List the stock names and percentages.
+2. What risks or sector concentration issues do you notice?
+3. What improvements would you suggest?
 
-간단명료하게 답변해주세요.`,
+Answer concisely in Korean.`,
 
     'rebalancing':
-      `이 포트폴리오 이미지를 보고 답변해주세요.
+      `Analyze this portfolio image.
 
-1. 주요 종목들과 비중이 어떻게 되나요?
-2. 비중이 너무 높거나 낮은 종목이 있나요?
-3. 리밸런싱이 필요하다면 어떤 조정을 추천하나요?
+Please answer in Korean:
+1. What are the main stocks and their percentages?
+2. Are there any stocks with too high or too low allocation?
+3. What rebalancing would you recommend?
 
-핵심만 간단히 설명해주세요.`,
+Answer concisely in Korean.`,
 
     'checklist':
-      `이 포트폴리오의 종목들을 확인해주세요.
+      `Review this portfolio image.
 
-1. 어떤 종목들이 있나요?
-2. 각 종목에 대해 주의깊게 봐야 할 점이 있다면 무엇인가요?
+Please answer in Korean:
+1. What stocks are in the portfolio?
+2. What should I watch out for with each stock?
 
-간단하게 정리해주세요.`,
+Answer concisely in Korean.`,
 
     'sector-balance':
-      `이 포트폴리오의 섹터 분포를 분석해주세요.
+      `Analyze the sector distribution in this portfolio image.
 
-1. 어떤 산업 섹터의 종목들이 있나요?
-2. 특정 섹터에 집중되어 있나요?
-3. 섹터 밸런스 개선을 위한 제안이 있나요?
+Please answer in Korean:
+1. What industry sectors are represented?
+2. Is there sector concentration?
+3. How can sector balance be improved?
 
-간단히 답변해주세요.`,
+Answer concisely in Korean.`,
 
     'profit-improvement':
-      `이 포트폴리오를 보고 답변해주세요.
+      `Look at this portfolio image.
 
-1. 주요 종목들과 수익률이 어떻게 보이나요?
-2. 수익률 개선을 위한 제안이 있나요?
+Please answer in Korean:
+1. What are the main stocks and their returns?
+2. What suggestions do you have to improve returns?
 
-핵심만 간단히 설명해주세요.`,
+Answer concisely in Korean.`,
   };
 
   // 템플릿 ID에 맞는 단순화된 프롬프트 사용, 없으면 기본 프롬프트
   const simplified = simplifiedPrompts[template.id];
 
   if (simplified) {
-    return `당신은 포트폴리오 분석 전문가입니다. 이미지를 보고 정확하게 분석해주세요.\n\n${simplified}`;
+    return `You are a portfolio analysis expert. Analyze the image carefully.\n\n${simplified}`;
   }
 
   // 커스텀 템플릿이거나 ID가 없는 경우: 원본에서 불필요한 부분 제거
@@ -73,7 +79,7 @@ function simplifyPromptForVisionLLM(originalPrompt: string, template: Template):
     .replace(/표 형태로.*$/gm, '') // 표 형식 요구사항 제거
     .trim();
 
-  return `당신은 포트폴리오 분석 전문가입니다.\n\n${cleanPrompt}\n\n간단명료하게 답변해주세요.`;
+  return `You are a portfolio analysis expert. Analyze the image.\n\n${cleanPrompt}\n\nPlease answer concisely in Korean.`;
 }
 
 /**
