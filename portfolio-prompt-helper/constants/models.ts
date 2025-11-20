@@ -10,8 +10,8 @@ import { ModelConfig, LLMModelType } from '@/types/model';
 export const SUPPORTED_MODELS: Record<LLMModelType, ModelConfig> = {
   'smolvlm2-2.2b-q4': {
     id: 'smolvlm2-2.2b-q4',
-    displayName: 'SmolVLM2 2.2B Q4 (권장)',
-    description: '가볍고 빠른 비전 언어 모델. 모바일에 최적화됨',
+    displayName: 'SmolVLM2 2.2B Q4 (경량)',
+    description: '가볍고 빠른 비전 언어 모델. 한국어 OCR 성능 제한적',
 
     requirements: {
       minRAM: 3, // GB
@@ -48,8 +48,8 @@ export const SUPPORTED_MODELS: Record<LLMModelType, ModelConfig> = {
 
   'llava-1.5-7b-q4': {
     id: 'llava-1.5-7b-q4',
-    displayName: 'LLaVA 1.5 7B Q4 (실험적)',
-    description: '균형 잡힌 성능과 속도. llama.rn 호환성 제한적',
+    displayName: 'LLaVA 1.5 7B Q4 (권장)',
+    description: '우수한 한국어 OCR 성능. SmolVLM2보다 정확한 이미지 분석',
 
     requirements: {
       minRAM: 4, // GB
@@ -125,9 +125,9 @@ export const SUPPORTED_MODELS: Record<LLMModelType, ModelConfig> = {
 };
 
 /**
- * 기본 모델 (권장)
+ * 기본 모델 (LLaVA 1.5 - 더 나은 한국어 OCR)
  */
-export const DEFAULT_MODEL: LLMModelType = 'smolvlm2-2.2b-q4';
+export const DEFAULT_MODEL: LLMModelType = 'llava-1.5-7b-q4';
 
 /**
  * 모델 ID로 설정 가져오기

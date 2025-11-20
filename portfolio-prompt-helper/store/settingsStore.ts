@@ -61,7 +61,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   llmConfig: {
     mode: 'clipboard', // 기본은 클립보드 모드
     localConfig: {
-      modelType: 'llava-1.5-7b-q4',
+      modelType: 'llava-1.5-7b-q4', // LLaVA 1.5 (4.8GB) - SmolVLM2보다 한국어 OCR 성능 우수
       enableGPU: false,
       maxTokens: 1024, // 적절한 길이: 512는 너무 짧고 2048은 생성 시간이 너무 김
       temperature: 0.7,
