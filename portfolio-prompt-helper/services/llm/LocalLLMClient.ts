@@ -98,11 +98,11 @@ export class LocalLLMClient implements LLMClient {
         contextSize: this.config.contextSize || 2048,
       });
 
-      // llama.rn 초기화 (타임아웃 2분)
+      // Step 1: llama.rn 기본 모델 초기화 (타임아웃 2분)
       this.context = await withTimeout(
         initLlama({
           model: this.modelPath,
-          mmproj: this.mmprojPath, // Vision projector
+          // mmproj는 initMultimodal에서 별도로 로드
           use_mlock: true, // 메모리 잠금 (성능 향상)
           n_ctx: this.config.contextSize || 2048, // 컨텍스트 크기
           n_gpu_layers: 0, // CPU만 사용 (배터리 고려)
@@ -114,11 +114,32 @@ export class LocalLLMClient implements LLMClient {
 
       this.onProgress?.({
         stage: 'initializing',
+        progress: 60,
+        message: 'Vision 모델 로딩 중...',
+      });
+
+      // Step 2: Multimodal (Vision) 초기화
+      console.log('Initializing multimodal with mmproj:', this.mmprojPath);
+      await withTimeout(
+        this.context.initMultimodal({
+          path: this.mmprojPath,
+          use_gpu: true, // GPU 사용 (이미지 처리 성능 향상)
+        }),
+        60000,
+        'Vision 모델 로딩 시간 초과 (1분). mmproj 파일이 손상되었을 수 있습니다.'
+      );
+
+      // Multimodal 지원 확인
+      const multimodalSupport = await this.context.getMultimodalSupport();
+      console.log('Multimodal support:', multimodalSupport);
+
+      this.onProgress?.({
+        stage: 'initializing',
         progress: 100,
         message: '모델 준비 완료',
       });
 
-      console.log('LocalLLMClient initialized successfully');
+      console.log('LocalLLMClient initialized successfully with vision support');
     } catch (error: any) {
       console.error('Failed to initialize llama.rn:', error);
       this.context = null;
@@ -199,15 +220,6 @@ export class LocalLLMClient implements LLMClient {
         return `data:image/jpeg;base64,${base64}`;
       });
 
-      // LLaVA 프롬프트 형식으로 변환
-      // LLaVA는 "USER: <image>\n{질문}\nASSISTANT:" 형식이 필요함
-      let formattedPrompt = prompt;
-      if (imageDataURLs && imageDataURLs.length > 0) {
-        // 이미지가 있으면 LLaVA 템플릿 적용
-        const imageTokens = imageDataURLs.map(() => '<image>').join('\n');
-        formattedPrompt = `USER: ${imageTokens}\n${prompt}\nASSISTANT:`;
-      }
-
       // 🔍 상세 디버깅 로그
       console.log('========== LocalLLM Generation Debug ==========');
       console.log('📝 Original prompt length:', prompt.length);
@@ -223,28 +235,52 @@ export class LocalLLMClient implements LLMClient {
         });
       }
 
-      console.log('📋 Formatted prompt length:', formattedPrompt.length);
-      console.log('📋 Formatted prompt (first 300 chars):');
-      console.log(formattedPrompt.substring(0, 300));
-      console.log('⚙️  Completion params:', {
+      // messages 형식으로 content 구성
+      // llama.rn은 messages API를 통해 자동으로 LLaVA 템플릿 적용
+      const messageContent: any[] = [];
+
+      // 이미지가 있으면 먼저 추가
+      if (imageDataURLs && imageDataURLs.length > 0) {
+        imageDataURLs.forEach((url) => {
+          messageContent.push({
+            type: 'image_url',
+            image_url: { url },
+          });
+        });
+      }
+
+      // 텍스트 프롬프트 추가
+      messageContent.push({
+        type: 'text',
+        text: prompt,
+      });
+
+      console.log('📋 Message content structure:', {
         imageCount: imageDataURLs?.length || 0,
+        hasText: true,
+        totalContentItems: messageContent.length,
+      });
+      console.log('⚙️  Completion params:', {
         maxTokens: this.config.maxTokens || 512,
         temperature: this.config.temperature || 0.7,
-        hasImages: !!(imageDataURLs && imageDataURLs.length > 0),
-        usingLLaVATemplate: formattedPrompt.startsWith('USER:'),
+        usingMessagesAPI: true,
       });
       console.log('===============================================');
 
-      // llama.rn completion 실행 (타임아웃 5분)
+      // llama.rn completion 실행 (messages API 사용, 타임아웃 5분)
       const result = await withTimeout(
         this.context!.completion({
-          prompt: formattedPrompt,
-          images: imageDataURLs,
+          messages: [
+            {
+              role: 'user',
+              content: messageContent,
+            },
+          ],
           n_predict: this.config.maxTokens || 512,
           temperature: this.config.temperature || 0.7,
           top_k: 40,
           top_p: 0.95,
-          stop: ['</s>', '\n\n\n', 'USER:'], // 중지 토큰 (USER: 추가하여 대화 종료)
+          stop: ['</s>', '\n\n\n'], // 중지 토큰
         }),
         GENERATION_TIMEOUT_MS,
         '응답 생성 시간 초과 (5분). 프롬프트를 더 짧게 하거나 이미지 개수를 줄여주세요.'
