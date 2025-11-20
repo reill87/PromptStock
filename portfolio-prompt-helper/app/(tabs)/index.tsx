@@ -247,69 +247,67 @@ export default function HomeScreen() {
 
         {/* Generate/Analyze Button */}
         {images.length > 0 && selectedTemplate && !generatedPrompt && (
-          <View>
-            <Button
-              title={llmMode === 'clipboard' ? '프롬프트 생성' : 'AI 분석 시작'}
-              variant="primary"
-              size="lg"
-              onPress={handleGeneratePrompt}
-              loading={isProcessing}
-              disabled={isProcessing}
-              fullWidth
-            />
+          <Button
+            title={llmMode === 'clipboard' ? '프롬프트 생성' : 'AI 분석 시작'}
+            variant="primary"
+            size="lg"
+            onPress={handleGeneratePrompt}
+            loading={isProcessing}
+            disabled={isProcessing}
+            fullWidth
+          />
+        )}
 
-            {/* Progress Indicator - 개선된 스피너 UI */}
-            {isProcessing && progress && (
-              <Card variant="elevated" className="mt-4 bg-blue-50">
-                <View className="items-center py-6">
-                  {/* 큰 스피너 */}
-                  <View className="bg-white rounded-full p-4 shadow-md mb-4">
-                    <ActivityIndicator size="large" color="#3B82F6" />
-                  </View>
+        {/* Progress Indicator - 개선된 스피너 UI (조건문 밖으로 이동) */}
+        {isProcessing && progress && (
+          <Card variant="elevated" className="mt-4 bg-blue-50">
+            <View className="items-center py-6">
+              {/* 큰 스피너 */}
+              <View className="bg-white rounded-full p-4 shadow-md mb-4">
+                <ActivityIndicator size="large" color="#3B82F6" />
+              </View>
 
-                  {/* 분석 단계 표시 */}
-                  <View className="flex-row items-center mb-2">
-                    <Ionicons name="analytics" size={20} color="#3B82F6" />
-                    <Text className="text-xl font-bold text-blue-900 ml-2">
-                      AI 분석 중
-                    </Text>
-                  </View>
+              {/* 분석 단계 표시 */}
+              <View className="flex-row items-center mb-2">
+                <Ionicons name="analytics" size={20} color="#3B82F6" />
+                <Text className="text-xl font-bold text-blue-900 ml-2">
+                  AI 분석 중
+                </Text>
+              </View>
 
-                  {/* 상세 메시지 */}
-                  <Text className="text-base text-blue-700 mb-1">
-                    {progress.message}
-                  </Text>
+              {/* 상세 메시지 */}
+              <Text className="text-base text-blue-700 mb-1">
+                {progress.message}
+              </Text>
 
-                  {/* 진행률 */}
-                  <Text className="text-sm font-semibold text-blue-600 mb-3">
-                    {progress.progress.toFixed(0)}% 완료
-                  </Text>
+              {/* 진행률 */}
+              <Text className="text-sm font-semibold text-blue-600 mb-3">
+                {progress.progress.toFixed(0)}% 완료
+              </Text>
 
-                  {/* 프로그레스 바 */}
-                  <View className="w-full bg-blue-200 rounded-full h-3 mb-4">
-                    <View
-                      className="bg-blue-600 h-3 rounded-full transition-all"
-                      style={{ width: `${progress.progress}%` }}
-                    />
-                  </View>
+              {/* 프로그레스 바 */}
+              <View className="w-full bg-blue-200 rounded-full h-3 mb-4">
+                <View
+                  className="bg-blue-600 h-3 rounded-full transition-all"
+                  style={{ width: `${progress.progress}%` }}
+                />
+              </View>
 
-                  {/* 안내 메시지 */}
-                  <Text className="text-xs text-gray-600 mb-3 text-center">
-                    로컬 LLM이 이미지를 분석하고 있습니다.{'\n'}
-                    기기 성능에 따라 수 초에서 수 분이 걸릴 수 있습니다.
-                  </Text>
+              {/* 안내 메시지 */}
+              <Text className="text-xs text-gray-600 mb-3 text-center">
+                로컬 LLM이 이미지를 분석하고 있습니다.{'\n'}
+                기기 성능에 따라 수 초에서 수 분이 걸릴 수 있습니다.
+              </Text>
 
-                  {/* 취소 버튼 */}
-                  <Button
-                    title="분석 취소"
-                    variant="outline"
-                    size="sm"
-                    onPress={cancelAnalysis}
-                  />
-                </View>
-              </Card>
-            )}
-          </View>
+              {/* 취소 버튼 */}
+              <Button
+                title="분석 취소"
+                variant="outline"
+                size="sm"
+                onPress={cancelAnalysis}
+              />
+            </View>
+          </Card>
         )}
 
         {/* Step 4: Results */}
