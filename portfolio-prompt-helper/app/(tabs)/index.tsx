@@ -15,10 +15,12 @@ import { ModelDownloader } from '@/components/llm/ModelDownloader';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { useHistory } from '@/hooks/useHistory';
 import { useLLMClient } from '@/hooks/useLLMClient';
+import { useOCR } from '@/hooks/useOCR';
 import { DEFAULT_TEMPLATES } from '@/constants/templates';
 import { Template } from '@/types';
 import { generatePrompt } from '@/utils/promptGenerator';
 import { getCustomTemplates } from '@/utils/templateStorage';
+import { PortfolioTextInput } from '@/components/ocr/PortfolioTextInput';
 
 export default function HomeScreen() {
   const showToast = useUIStore((state) => state.showToast);
@@ -28,7 +30,15 @@ export default function HomeScreen() {
   const { images, loading, pickImages, takePhoto, removeImage, clearImages, convertImagesToBase64 } = useImageUpload();
   const { saveToHistory, loading: savingToHistory } = useHistory();
   const { executeAnalysis, cancelAnalysis, isProcessing, progress } = useLLMClient();
+  const {
+    isProcessing: isOCRProcessing,
+    progress: ocrProgress,
+    result: ocrResult,
+    extractTextFromMultiple,
+    reset: resetOCR
+  } = useOCR();
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [portfolioText, setPortfolioText] = useState<string>('');
   const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [showSaveForm, setShowSaveForm] = useState(false);
@@ -52,6 +62,61 @@ export default function HomeScreen() {
       setAllTemplates([...DEFAULT_TEMPLATES, ...customs]);
     } catch (error) {
       console.error('Error loading custom templates:', error);
+    }
+  };
+
+  const handleExtractText = async () => {
+    if (images.length === 0) {
+      showToast('warning', '이미지를 먼저 업로드해주세요');
+      return;
+    }
+
+    try {
+      const imageUris = images.map(img => img.uri);
+      const results = await extractTextFromMultiple(imageUris);
+
+      const successCount = results.filter(r => r.success).length;
+      if (successCount > 0) {
+        showToast('success', `${successCount}/${results.length}개 이미지에서 텍스트 추출 완료`);
+      } else {
+        showToast('error', '텍스트 추출에 실패했습니다');
+      }
+    } catch (error: any) {
+      console.error('OCR failed:', error);
+      showToast('error', `OCR 실패: ${error.message}`);
+    }
+  };
+
+  const handleAnalyzeText = async (text: string) => {
+    if (!selectedTemplate) {
+      showToast('warning', '템플릿을 먼저 선택해주세요');
+      return;
+    }
+
+    if (!installedModel) {
+      showToast('warning', '모델을 먼저 다운로드해주세요');
+      return;
+    }
+
+    try {
+      // 텍스트 기반 프롬프트 생성
+      const prompt = `${generatePrompt(selectedTemplate, {
+        imageCount: 0,
+        llmMode: 'local',
+      })}\n\n포트폴리오 데이터:\n${text}`;
+
+      setGeneratedPrompt(prompt);
+      setIsSaved(false);
+
+      // Execute text-only analysis (no images)
+      const response = await executeAnalysis(prompt, []);
+
+      setAiResponse(response.text);
+      showToast('success', `AI 분석 완료! (${(response.processingTime / 1000).toFixed(1)}초)`);
+    } catch (error: any) {
+      console.error('AI analysis failed:', error);
+      showToast('error', `분석 실패: ${error.message}`);
+      setAiResponse(null);
     }
   };
 
@@ -159,6 +224,8 @@ export default function HomeScreen() {
         }
 
         clearImages();
+        resetOCR();
+        setPortfolioText('');
         setSelectedTemplate(null);
         setGeneratedPrompt(null);
         setAiResponse(null);
@@ -211,7 +278,66 @@ export default function HomeScreen() {
             onRemove={removeImage}
             onClear={clearImages}
           />
+
+          {/* OCR 텍스트 추출 버튼 (로컬 LLM 모드일 때만) */}
+          {llmMode === 'local' && images.length > 0 && !ocrResult && (
+            <View className="mt-4">
+              <Button
+                title="이미지에서 텍스트 추출 (OCR)"
+                variant="secondary"
+                onPress={handleExtractText}
+                loading={isOCRProcessing}
+                disabled={isOCRProcessing}
+                fullWidth
+              />
+              <Text className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                💡 이미지에서 텍스트를 추출하여 더 정확한 분석이 가능합니다
+              </Text>
+            </View>
+          )}
         </Card>
+
+        {/* OCR Progress Indicator */}
+        {isOCRProcessing && ocrProgress && (
+          <Card variant="elevated" className="mb-4 bg-green-50 dark:bg-green-900/20">
+            <View className="items-center py-4">
+              <View className="bg-white rounded-full p-3 shadow-md mb-3">
+                <ActivityIndicator size="large" color="#10B981" />
+              </View>
+              <View className="flex-row items-center mb-2">
+                <Ionicons name="scan" size={20} color="#10B981" />
+                <Text className="text-lg font-bold text-green-900 dark:text-green-100 ml-2">
+                  텍스트 추출 중
+                </Text>
+              </View>
+              <Text className="text-sm text-green-700 dark:text-green-300 mb-2">
+                {ocrProgress.message}
+              </Text>
+              <Text className="text-xs font-semibold text-green-600 dark:text-green-400 mb-3">
+                {ocrProgress.progress.toFixed(0)}% 완료
+              </Text>
+              <View className="w-full bg-green-200 dark:bg-green-800 rounded-full h-2">
+                <View
+                  className="bg-green-600 h-2 rounded-full"
+                  style={{ width: `${ocrProgress.progress}%` }}
+                />
+              </View>
+            </View>
+          </Card>
+        )}
+
+        {/* Portfolio Text Input (OCR 결과 또는 수동 입력) */}
+        {llmMode === 'local' && (
+          <PortfolioTextInput
+            ocrResult={ocrResult}
+            onTextChange={setPortfolioText}
+            onAnalyze={handleAnalyzeText}
+            onReset={() => {
+              resetOCR();
+              setPortfolioText('');
+            }}
+          />
+        )}
 
         {/* Step 2: Template Selection */}
         <Card variant="elevated" className="mb-4">

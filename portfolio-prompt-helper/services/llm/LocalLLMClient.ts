@@ -36,6 +36,7 @@ export class LocalLLMClient implements LLMClient {
 
   private context: LlamaContext | null = null;
   private onProgress?: (progress: LLMGenerationProgress) => void;
+  private multimodalInitialized = false;
 
   constructor(
     private modelPath: string,
@@ -52,15 +53,19 @@ export class LocalLLMClient implements LLMClient {
 
   /**
    * 모델 초기화
-   * llama.rn을 사용하여 모델과 vision projector 로드
+   * llama.rn을 사용하여 모델 로드 (텍스트 전용)
+   * @param requireMultimodal - true면 Vision 모델도 함께 로드, false면 텍스트만
    */
-  async initialize(): Promise<void> {
+  async initialize(requireMultimodal: boolean = false): Promise<void> {
     if (Platform.OS === 'web') {
       throw new Error('로컬 LLM은 웹 플랫폼에서 지원되지 않습니다');
     }
 
     if (this.context) {
-      console.warn('Context already initialized');
+      // 이미 초기화되어 있으면, multimodal이 필요한 경우만 추가 초기화
+      if (requireMultimodal && !this.multimodalInitialized) {
+        await this.initializeMultimodal();
+      }
       return;
     }
 
@@ -79,11 +84,14 @@ export class LocalLLMClient implements LLMClient {
         );
       }
 
-      const mmprojExists = await FileSystem.getInfoAsync(this.mmprojPath);
-      if (!mmprojExists.exists) {
-        throw new Error(
-          `Vision 모델 파일을 찾을 수 없습니다.\n경로: ${this.mmprojPath}\n\n모델을 다시 다운로드해주세요.`
-        );
+      // Multimodal이 필요한 경우에만 mmproj 파일 확인
+      if (requireMultimodal) {
+        const mmprojExists = await FileSystem.getInfoAsync(this.mmprojPath);
+        if (!mmprojExists.exists) {
+          throw new Error(
+            `Vision 모델 파일을 찾을 수 없습니다.\n경로: ${this.mmprojPath}\n\n모델을 다시 다운로드해주세요.`
+          );
+        }
       }
 
       this.onProgress?.({
@@ -94,15 +102,14 @@ export class LocalLLMClient implements LLMClient {
 
       console.log('Initializing llama.rn with:', {
         model: this.modelPath,
-        mmproj: this.mmprojPath,
         contextSize: this.config.contextSize || 2048,
+        multimodal: requireMultimodal,
       });
 
       // Step 1: llama.rn 기본 모델 초기화 (타임아웃 2분)
       this.context = await withTimeout(
         initLlama({
           model: this.modelPath,
-          // mmproj는 initMultimodal에서 별도로 로드
           use_mlock: true, // 메모리 잠금 (성능 향상)
           n_ctx: this.config.contextSize || 2048, // 컨텍스트 크기
           n_gpu_layers: 0, // CPU만 사용 (배터리 고려)
@@ -113,43 +120,10 @@ export class LocalLLMClient implements LLMClient {
         '모델 로딩 시간 초과 (2분). 디바이스 메모리가 부족하거나 모델이 손상되었을 수 있습니다.'
       );
 
-      this.onProgress?.({
-        stage: 'initializing',
-        progress: 60,
-        message: 'Vision 모델 로딩 중...',
-      });
-
-      // Step 2: Multimodal (Vision) 초기화
-      console.log('🔧 Starting multimodal initialization...');
-      console.log('📂 mmproj path:', this.mmprojPath);
-
-      const multimodalSuccess = await withTimeout(
-        this.context.initMultimodal({
-          path: this.mmprojPath,
-          use_gpu: true, // GPU 사용 (이미지 처리 성능 향상)
-        }),
-        60000,
-        'Vision 모델 로딩 시간 초과 (1분). mmproj 파일이 손상되었을 수 있습니다.'
-      );
-
-      console.log('✅ initMultimodal returned:', multimodalSuccess);
-
-      // Multimodal 활성화 확인
-      const isEnabled = await this.context.isMultimodalEnabled();
-      console.log('🔍 isMultimodalEnabled:', isEnabled);
-
-      if (!isEnabled) {
-        throw new Error(
-          'Multimodal 초기화 실패. mmproj 파일이 손상되었거나 모델과 호환되지 않습니다.\n\n' +
-          '해결 방법:\n' +
-          '1. 모델을 다시 다운로드해주세요\n' +
-          '2. LLaVA 1.5 7B Q4 모델인지 확인해주세요'
-        );
+      // Step 2: Multimodal이 필요한 경우에만 초기화
+      if (requireMultimodal) {
+        await this.initializeMultimodal();
       }
-
-      // Multimodal 지원 확인
-      const multimodalSupport = await this.context.getMultimodalSupport();
-      console.log('📊 Multimodal support:', multimodalSupport);
 
       this.onProgress?.({
         stage: 'initializing',
@@ -157,7 +131,7 @@ export class LocalLLMClient implements LLMClient {
         message: '모델 준비 완료',
       });
 
-      console.log('LocalLLMClient initialized successfully with vision support');
+      console.log(`LocalLLMClient initialized successfully (multimodal: ${this.multimodalInitialized})`);
     } catch (error: any) {
       console.error('Failed to initialize llama.rn:', error);
       this.context = null;
@@ -180,6 +154,60 @@ export class LocalLLMClient implements LLMClient {
   }
 
   /**
+   * Multimodal (Vision) 초기화
+   * 이미지 처리가 필요한 경우 호출
+   */
+  private async initializeMultimodal(): Promise<void> {
+    if (!this.context) {
+      throw new Error('모델이 먼저 초기화되어야 합니다');
+    }
+
+    if (this.multimodalInitialized) {
+      return; // 이미 초기화됨
+    }
+
+    this.onProgress?.({
+      stage: 'initializing',
+      progress: 60,
+      message: 'Vision 모델 로딩 중...',
+    });
+
+    console.log('🔧 Starting multimodal initialization...');
+    console.log('📂 mmproj path:', this.mmprojPath);
+
+    const multimodalSuccess = await withTimeout(
+      this.context.initMultimodal({
+        path: this.mmprojPath,
+        use_gpu: true, // GPU 사용 (이미지 처리 성능 향상)
+      }),
+      60000,
+      'Vision 모델 로딩 시간 초과 (1분). mmproj 파일이 손상되었을 수 있습니다.'
+    );
+
+    console.log('✅ initMultimodal returned:', multimodalSuccess);
+
+    // Multimodal 활성화 확인
+    const isEnabled = await this.context.isMultimodalEnabled();
+    console.log('🔍 isMultimodalEnabled:', isEnabled);
+
+    if (!isEnabled) {
+      throw new Error(
+        'Multimodal 초기화 실패. mmproj 파일이 손상되었거나 모델과 호환되지 않습니다.\n\n' +
+        '해결 방법:\n' +
+        '1. 모델을 다시 다운로드해주세요\n' +
+        '2. 지원되는 모델인지 확인해주세요'
+      );
+    }
+
+    // Multimodal 지원 확인
+    const multimodalSupport = await this.context.getMultimodalSupport();
+    console.log('📊 Multimodal support:', multimodalSupport);
+
+    this.multimodalInitialized = true;
+    console.log('✅ Multimodal initialized successfully');
+  }
+
+  /**
    * 프롬프트 실행 및 응답 생성
    *
    * @param prompt 프롬프트 텍스트
@@ -198,15 +226,21 @@ export class LocalLLMClient implements LLMClient {
       );
     }
 
+    const hasImages = images && images.length > 0;
+
+    // 모델 초기화 (이미지가 있으면 multimodal도 초기화)
     if (!this.context) {
-      await this.initialize();
+      await this.initialize(hasImages);
+    } else if (hasImages && !this.multimodalInitialized) {
+      // 이미 모델은 로드했지만 multimodal은 안한 경우
+      await this.initializeMultimodal();
     }
 
     const startTime = Date.now();
 
     try {
       // 이미지 처리 단계
-      if (images && images.length > 0) {
+      if (hasImages) {
         this.onProgress?.({
           stage: 'processing-images',
           progress: 30,
@@ -219,6 +253,9 @@ export class LocalLLMClient implements LLMClient {
             '이미지가 너무 많습니다. 최대 10개까지만 지원합니다.'
           );
         }
+      } else {
+        // 텍스트 전용 모드
+        console.log('📝 Text-only mode (no images)');
       }
 
       // 응답 생성 단계
@@ -254,30 +291,40 @@ export class LocalLLMClient implements LLMClient {
       }
 
       // messages 형식으로 content 구성
-      // llama.rn은 messages API를 통해 자동으로 LLaVA 템플릿 적용
-      const messageContent: any[] = [];
+      // 텍스트 전용 모드는 간단한 문자열, 이미지 모드는 배열 형식
+      let messageContent: any;
 
-      // 이미지가 있으면 먼저 추가
-      if (imageDataURLs && imageDataURLs.length > 0) {
+      if (hasImages && imageDataURLs) {
+        // 이미지 + 텍스트 모드: 배열 형식
+        const contentArray: any[] = [];
+
         imageDataURLs.forEach((url) => {
-          messageContent.push({
+          contentArray.push({
             type: 'image_url',
             image_url: { url },
           });
         });
+
+        contentArray.push({
+          type: 'text',
+          text: prompt,
+        });
+
+        messageContent = contentArray;
+
+        console.log('📋 Multimodal message content:', {
+          imageCount: imageDataURLs.length,
+          hasText: true,
+          totalContentItems: contentArray.length,
+        });
+      } else {
+        // 텍스트 전용 모드: 단순 문자열
+        messageContent = prompt;
+
+        console.log('📋 Text-only message content:', {
+          textLength: prompt.length,
+        });
       }
-
-      // 텍스트 프롬프트 추가
-      messageContent.push({
-        type: 'text',
-        text: prompt,
-      });
-
-      console.log('📋 Message content structure:', {
-        imageCount: imageDataURLs?.length || 0,
-        hasText: true,
-        totalContentItems: messageContent.length,
-      });
       console.log('⚙️  Completion params:', {
         maxTokens: this.config.maxTokens || 1024,
         temperature: this.config.temperature || 0.7,
