@@ -111,7 +111,7 @@ export function useImageUpload() {
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: 'images',
-        allowsMultipleSelection: true,
+        allowsMultipleSelection: false,
         quality: 0.8,
         allowsEditing: false,
       });
