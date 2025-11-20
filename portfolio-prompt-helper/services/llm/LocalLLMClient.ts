@@ -120,8 +120,10 @@ export class LocalLLMClient implements LLMClient {
       });
 
       // Step 2: Multimodal (Vision) 초기화
-      console.log('Initializing multimodal with mmproj:', this.mmprojPath);
-      await withTimeout(
+      console.log('🔧 Starting multimodal initialization...');
+      console.log('📂 mmproj path:', this.mmprojPath);
+
+      const multimodalSuccess = await withTimeout(
         this.context.initMultimodal({
           path: this.mmprojPath,
           use_gpu: true, // GPU 사용 (이미지 처리 성능 향상)
@@ -130,9 +132,24 @@ export class LocalLLMClient implements LLMClient {
         'Vision 모델 로딩 시간 초과 (1분). mmproj 파일이 손상되었을 수 있습니다.'
       );
 
+      console.log('✅ initMultimodal returned:', multimodalSuccess);
+
+      // Multimodal 활성화 확인
+      const isEnabled = await this.context.isMultimodalEnabled();
+      console.log('🔍 isMultimodalEnabled:', isEnabled);
+
+      if (!isEnabled) {
+        throw new Error(
+          'Multimodal 초기화 실패. mmproj 파일이 손상되었거나 모델과 호환되지 않습니다.\n\n' +
+          '해결 방법:\n' +
+          '1. 모델을 다시 다운로드해주세요\n' +
+          '2. LLaVA 1.5 7B Q4 모델인지 확인해주세요'
+        );
+      }
+
       // Multimodal 지원 확인
       const multimodalSupport = await this.context.getMultimodalSupport();
-      console.log('Multimodal support:', multimodalSupport);
+      console.log('📊 Multimodal support:', multimodalSupport);
 
       this.onProgress?.({
         stage: 'initializing',
