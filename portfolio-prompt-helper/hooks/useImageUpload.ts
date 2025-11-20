@@ -27,11 +27,17 @@ export function useImageUpload() {
   const imageQuality = useSettingsStore((state) => state.imageQuality);
 
   const requestPermissions = async () => {
+    console.log('🔐 Requesting media library permissions...');
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    console.log('🔐 Permission status:', status);
+
     if (status !== 'granted') {
+      console.error('❌ Permission denied:', status);
       showToast('error', '갤러리 접근 권한이 필요합니다');
       return false;
     }
+
+    console.log('✅ Permission granted');
     return true;
   };
 
@@ -104,7 +110,7 @@ export function useImageUpload() {
       console.log('📸 Opening image picker...');
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsMultipleSelection: true,
         quality: 0.8,
         allowsEditing: false,
