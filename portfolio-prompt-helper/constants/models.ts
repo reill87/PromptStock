@@ -122,12 +122,50 @@ export const SUPPORTED_MODELS: Record<LLMModelType, ModelConfig> = {
       batteryImpact: 'high',
     },
   },
+
+  'qwen2.5-vl-7b-q4': {
+    id: 'qwen2.5-vl-7b-q4',
+    displayName: 'Qwen2.5-VL 7B Q4 (권장)',
+    description: '우수한 다국어 지원. 한국어 이미지 분석 성능 최고',
+
+    requirements: {
+      minRAM: 4, // GB
+      minStorage: 7, // GB
+      minOSVersion: {
+        ios: '15.0',
+        android: 24,
+      },
+    },
+
+    files: {
+      model: {
+        name: 'Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf',
+        url: 'https://huggingface.co/Mungert/Qwen2.5-VL-7B-Instruct-GGUF/resolve/main/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf',
+        size: 6_200_000_000, // 약 6.2GB
+        checksum: '', // TODO: 실제 체크섬으로 업데이트
+        required: true,
+      },
+      mmproj: {
+        name: 'Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf',
+        url: 'https://huggingface.co/Mungert/Qwen2.5-VL-7B-Instruct-GGUF/resolve/main/Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf',
+        size: 600_000_000, // 약 600MB
+        checksum: '', // TODO: 실제 체크섬으로 업데이트
+        required: true,
+      },
+    },
+
+    performance: {
+      avgImageProcessingTime: 8, // seconds (추정)
+      avgTokensPerSecond: 15,
+      batteryImpact: 'high',
+    },
+  },
 };
 
 /**
- * 기본 모델 (LLaVA 1.5 - 더 나은 한국어 OCR)
+ * 기본 모델 (Qwen2.5-VL - 한국어 OCR 최고)
  */
-export const DEFAULT_MODEL: LLMModelType = 'llava-1.5-7b-q4';
+export const DEFAULT_MODEL: LLMModelType = 'qwen2.5-vl-7b-q4';
 
 /**
  * 모델 ID로 설정 가져오기
