@@ -101,12 +101,16 @@ export function useImageUpload() {
 
     setLoading(true);
     try {
+      console.log('📸 Opening image picker...');
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsMultipleSelection: true,
         quality: 0.8,
         allowsEditing: false,
       });
+
+      console.log('📸 Image picker result:', result.canceled ? 'canceled' : `${result.assets.length} images selected`);
 
       if (result.canceled) {
         setLoading(false);
@@ -121,18 +125,34 @@ export function useImageUpload() {
         return;
       }
 
-      // Compress and convert images (no base64 for preview, only for storage)
-      const processedImages = await Promise.all(
-        result.assets.map((asset) => compressAndConvert(asset.uri, false))
-      );
+      // Process images sequentially to avoid memory issues
+      const processedImages: ImageAsset[] = [];
+      for (let i = 0; i < result.assets.length; i++) {
+        const asset = result.assets[i];
+        console.log(`🖼️  Processing image ${i + 1}/${result.assets.length}...`);
 
-      setImages([...images, ...processedImages]);
-      showToast('success', `${processedImages.length}장의 이미지를 추가했습니다`);
+        try {
+          const processed = await compressAndConvert(asset.uri, false);
+          processedImages.push(processed);
+          console.log(`✅ Image ${i + 1} processed successfully`);
+        } catch (error) {
+          console.error(`❌ Failed to process image ${i + 1}:`, error);
+          showToast('warning', `이미지 ${i + 1} 처리 실패`);
+        }
+      }
+
+      if (processedImages.length > 0) {
+        setImages([...images, ...processedImages]);
+        showToast('success', `${processedImages.length}장의 이미지를 추가했습니다`);
+      } else {
+        showToast('error', '이미지 처리에 실패했습니다');
+      }
     } catch (error) {
-      console.error('Image picker error:', error);
+      console.error('❌ Image picker error:', error);
       showToast('error', '이미지 업로드 중 오류가 발생했습니다');
     } finally {
       setLoading(false);
+      console.log('📸 Image picker completed');
     }
   }, [images, compressAndConvert, showToast]);
 
