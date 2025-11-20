@@ -106,6 +106,7 @@ export class LocalLLMClient implements LLMClient {
           use_mlock: true, // 메모리 잠금 (성능 향상)
           n_ctx: this.config.contextSize || 2048, // 컨텍스트 크기
           n_gpu_layers: 0, // CPU만 사용 (배터리 고려)
+          ctx_shift: false, // Multimodal 필수: 미디어 토큰 위치 유지
           seed: 42, // 재현 가능한 결과
         }),
         120000,
