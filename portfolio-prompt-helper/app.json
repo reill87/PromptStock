@@ -23,7 +23,9 @@
       "infoPlist": {
         "UIBackgroundModes": [],
         "NSCameraUsageDescription": "프롬프트 생성을 위해 이미지를 촬영합니다.",
-        "NSPhotoLibraryUsageDescription": "프롬프트 생성을 위해 갤러리 이미지를 선택합니다."
+        "NSPhotoLibraryUsageDescription": "프롬프트 생성을 위해 갤러리 이미지를 선택합니다.",
+        "NSPhotoLibraryAddUsageDescription": "분석한 이미지를 저장하기 위해 갤러리 접근이 필요합니다.",
+        "PHPhotoLibraryPreventAutomaticLimitedAccessAlert": true
       }
     },
     "android": {
