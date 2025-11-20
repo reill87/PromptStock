@@ -16,52 +16,19 @@ function simplifyPromptForVisionLLM(originalPrompt: string, template: Template):
   // Vision LLM은 영어를 더 잘 처리하므로 영어로 질문하고 한국어로 답변 요청
   const simplifiedPrompts: Record<string, string> = {
     'risk-analysis':
-      `Look at this portfolio image carefully.
-
-Please answer in Korean:
-1. What stocks do you see? List the stock names and percentages.
-2. What risks or sector concentration issues do you notice?
-3. What improvements would you suggest?
-
-Answer concisely in Korean.`,
+      `Describe what you see in this image. List all the stock names and numbers visible. Answer in Korean.`,
 
     'rebalancing':
-      `Analyze this portfolio image.
-
-Please answer in Korean:
-1. What are the main stocks and their percentages?
-2. Are there any stocks with too high or too low allocation?
-3. What rebalancing would you recommend?
-
-Answer concisely in Korean.`,
+      `Describe what you see in this image. List all the stock names and numbers visible. Answer in Korean.`,
 
     'checklist':
-      `Review this portfolio image.
-
-Please answer in Korean:
-1. What stocks are in the portfolio?
-2. What should I watch out for with each stock?
-
-Answer concisely in Korean.`,
+      `Describe what you see in this image. List all the stock names visible. Answer in Korean.`,
 
     'sector-balance':
-      `Analyze the sector distribution in this portfolio image.
-
-Please answer in Korean:
-1. What industry sectors are represented?
-2. Is there sector concentration?
-3. How can sector balance be improved?
-
-Answer concisely in Korean.`,
+      `Describe what you see in this image. List all the stock names visible. Answer in Korean.`,
 
     'profit-improvement':
-      `Look at this portfolio image.
-
-Please answer in Korean:
-1. What are the main stocks and their returns?
-2. What suggestions do you have to improve returns?
-
-Answer concisely in Korean.`,
+      `Describe what you see in this image. List all the stock names and numbers visible. Answer in Korean.`,
   };
 
   // 템플릿 ID에 맞는 단순화된 프롬프트 사용, 없으면 기본 프롬프트
