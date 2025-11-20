@@ -63,7 +63,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     localConfig: {
       modelType: 'llava-1.5-7b-q4',
       enableGPU: false,
-      maxTokens: 2048, // 512 → 2048로 증가 (더 긴 답변 생성)
+      maxTokens: 1024, // 적절한 길이: 512는 너무 짧고 2048은 생성 시간이 너무 김
       temperature: 0.7,
       contextSize: 2048,
     },

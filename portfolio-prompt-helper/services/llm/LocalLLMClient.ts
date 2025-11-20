@@ -10,8 +10,8 @@ import { initLlama } from 'llama.rn';
 import type { LlamaContext } from 'llama.rn';
 import { LLMClient, LLMResponse, LLMGenerationProgress } from '@/types/llm';
 
-// 타임아웃 상수 (5분)
-const GENERATION_TIMEOUT_MS = 5 * 60 * 1000;
+// 타임아웃 상수 (8분) - Vision 모델은 느릴 수 있음
+const GENERATION_TIMEOUT_MS = 8 * 60 * 1000;
 
 /**
  * 타임아웃 래퍼 함수
@@ -279,7 +279,7 @@ export class LocalLLMClient implements LLMClient {
         totalContentItems: messageContent.length,
       });
       console.log('⚙️  Completion params:', {
-        maxTokens: this.config.maxTokens || 2048,
+        maxTokens: this.config.maxTokens || 1024,
         temperature: this.config.temperature || 0.7,
         usingMessagesAPI: true,
       });
@@ -294,14 +294,14 @@ export class LocalLLMClient implements LLMClient {
               content: messageContent,
             },
           ],
-          n_predict: this.config.maxTokens || 2048, // 512 → 2048로 증가
+          n_predict: this.config.maxTokens || 1024, // 적절한 길이 (너무 길면 타임아웃 발생)
           temperature: this.config.temperature || 0.7,
           top_k: 40,
           top_p: 0.95,
           stop: ['</s>'], // '\n\n\n' 제거 - 너무 일찍 중단됨
         }),
         GENERATION_TIMEOUT_MS,
-        '응답 생성 시간 초과 (5분). 프롬프트를 더 짧게 하거나 이미지 개수를 줄여주세요.'
+        '응답 생성 시간 초과 (8분). 프롬프트를 더 짧게 하거나 이미지 개수를 줄여주세요.'
       );
 
       this.onProgress?.({
