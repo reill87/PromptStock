@@ -66,18 +66,16 @@ function RootLayoutNav() {
         const currentModel = useModelStore.getState().installedModel;
 
         if (currentModel) {
-          // 케이스 1: AsyncStorage에 정보 있음 → 파일 검증 및 호환성 확인
+          // 케이스 1: AsyncStorage에 정보 있음 → 파일 검증
 
-          // LLaVA 모델은 llama.rn과 호환성 문제가 있으므로 제거
-          const isLLaVAModel =
-            (currentModel.modelId as string).includes('llava');
-
-          if (isLLaVAModel) {
-            console.warn('⚠️ LLaVA 모델은 llama.rn과 호환성 문제가 있어 제거합니다.');
-            console.log('ℹ️ SmolVLM2 모델을 다운로드해주세요.');
-            await setInstalledModel(null);
-            return;
-          }
+          // 호환성 체크 제거 - LLaVA 1.5를 시도해봄
+          // const isLLaVAModel = (currentModel.modelId as string).includes('llava');
+          // if (isLLaVAModel) {
+          //   console.warn('⚠️ LLaVA 모델은 llama.rn과 호환성 문제가 있어 제거합니다.');
+          //   console.log('ℹ️ SmolVLM2 모델을 다운로드해주세요.');
+          //   await setInstalledModel(null);
+          //   return;
+          // }
 
           const filesExist = await ModelManager.verifyModelFiles(currentModel);
 
