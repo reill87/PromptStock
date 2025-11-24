@@ -128,6 +128,61 @@ export function HistoryDetail({
             </View>
           </Card>
 
+          {/* Portfolio Snapshot */}
+          {analysis.snapshot && (
+            <Card variant="elevated" className="mb-4">
+              <View className="flex-row items-center mb-3">
+                <Ionicons name="stats-chart" size={20} color="#3B82F6" />
+                <Text className="text-base font-bold ml-2">포트폴리오 스냅샷</Text>
+              </View>
+              <View className="bg-blue-50 p-4 rounded-lg">
+                {/* Total Value */}
+                {analysis.snapshot.totalValue && (
+                  <View className="mb-3">
+                    <Text className="text-xs text-gray-600 mb-1">총 평가금액</Text>
+                    <Text className="text-2xl font-bold text-blue-900">
+                      {analysis.snapshot.totalValue.toLocaleString()}만원
+                    </Text>
+                  </View>
+                )}
+
+                {/* Stock Count */}
+                {analysis.snapshot.stockCount && (
+                  <View className="mb-3">
+                    <Text className="text-xs text-gray-600 mb-1">종목 수</Text>
+                    <Text className="text-xl font-bold text-blue-800">
+                      {analysis.snapshot.stockCount}개
+                    </Text>
+                  </View>
+                )}
+
+                {/* Top Holdings */}
+                {analysis.snapshot.topHoldings && analysis.snapshot.topHoldings.length > 0 && (
+                  <View>
+                    <Text className="text-xs text-gray-600 mb-2">상위 종목</Text>
+                    <View className="flex-row flex-wrap gap-2">
+                      {analysis.snapshot.topHoldings.map((holding, index) => (
+                        <View
+                          key={index}
+                          className="bg-white px-3 py-2 rounded-lg border border-blue-200"
+                        >
+                          <Text className="text-sm font-semibold text-blue-900">
+                            {holding.name}
+                          </Text>
+                          {holding.ratio && (
+                            <Text className="text-xs text-blue-700 mt-0.5">
+                              {holding.ratio}%
+                            </Text>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
+            </Card>
+          )}
+
           {/* Image Gallery */}
           {analysis.images && analysis.images.length > 0 && (
             <Card variant="elevated" className="mb-4">

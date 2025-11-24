@@ -39,6 +39,11 @@ export default function HomeScreen() {
   const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
   const [allTemplates, setAllTemplates] = useState<Template[]>(DEFAULT_TEMPLATES);
 
+  // Portfolio snapshot state
+  const [totalValue, setTotalValue] = useState('');
+  const [stockCount, setStockCount] = useState('');
+  const [topHoldingsInput, setTopHoldingsInput] = useState('');
+
   // Load custom templates on mount
   useEffect(() => {
     loadCustomTemplates();
@@ -124,6 +129,22 @@ export default function HomeScreen() {
         ? await convertImagesToBase64(true)
         : { images: [], thumbnails: [] };
 
+      // Parse portfolio snapshot if provided
+      let snapshot = undefined;
+      if (totalValue || stockCount || topHoldingsInput) {
+        const parsedTotalValue = totalValue ? parseFloat(totalValue.replace(/,/g, '')) : undefined;
+        const parsedStockCount = stockCount ? parseInt(stockCount) : undefined;
+        const topHoldings = topHoldingsInput
+          ? topHoldingsInput.split(',').map(name => ({ name: name.trim() })).filter(h => h.name)
+          : undefined;
+
+        snapshot = {
+          totalValue: parsedTotalValue,
+          stockCount: parsedStockCount,
+          topHoldings,
+        };
+      }
+
       await saveToHistory({
         templateName: selectedTemplate.name,
         generatedPrompt: generatedPrompt,
@@ -134,6 +155,7 @@ export default function HomeScreen() {
         tags: tags,
         llmMode: llmMode,
         aiResponse: aiResponse || undefined,
+        snapshot,
       });
 
       setIsSaved(true);
@@ -141,6 +163,9 @@ export default function HomeScreen() {
       setUserNote('');
       setTags([]);
       setTagInput('');
+      setTotalValue('');
+      setStockCount('');
+      setTopHoldingsInput('');
     } catch (error) {
       console.error('Error saving to history:', error);
       showToast('error', '이미지 처리 중 오류가 발생했습니다');
@@ -165,6 +190,9 @@ export default function HomeScreen() {
         setUserNote('');
         setTags([]);
         setTagInput('');
+        setTotalValue('');
+        setStockCount('');
+        setTopHoldingsInput('');
         setIsSaved(false);
         showToast('info', '초기화되었습니다');
       }
@@ -401,6 +429,63 @@ export default function HomeScreen() {
                         </View>
                       )}
 
+                      {/* Portfolio Snapshot Section */}
+                      <View className="mb-4 p-4 bg-blue-50 rounded-lg">
+                        <View className="flex-row items-center mb-3">
+                          <Ionicons name="stats-chart" size={20} color="#3B82F6" />
+                          <Text className="text-sm font-bold text-gray-900 ml-2">
+                            📊 포트폴리오 스냅샷 (선택사항)
+                          </Text>
+                        </View>
+                        <Text className="text-xs text-gray-600 mb-3">
+                          시간에 따른 변화를 추적하기 위한 정보입니다
+                        </Text>
+
+                        {/* Total Value Input */}
+                        <View className="mb-3">
+                          <Text className="text-xs font-semibold text-gray-700 mb-1">
+                            총 평가금액
+                          </Text>
+                          <TextInput
+                            value={totalValue}
+                            onChangeText={setTotalValue}
+                            placeholder="예: 5234 (만원 단위)"
+                            keyboardType="numeric"
+                            className="bg-white px-3 py-2 rounded-lg text-gray-900"
+                          />
+                        </View>
+
+                        {/* Stock Count Input */}
+                        <View className="mb-3">
+                          <Text className="text-xs font-semibold text-gray-700 mb-1">
+                            종목 수
+                          </Text>
+                          <TextInput
+                            value={stockCount}
+                            onChangeText={setStockCount}
+                            placeholder="예: 12"
+                            keyboardType="numeric"
+                            className="bg-white px-3 py-2 rounded-lg text-gray-900"
+                          />
+                        </View>
+
+                        {/* Top Holdings Input */}
+                        <View>
+                          <Text className="text-xs font-semibold text-gray-700 mb-1">
+                            상위 종목 (쉼표로 구분)
+                          </Text>
+                          <TextInput
+                            value={topHoldingsInput}
+                            onChangeText={setTopHoldingsInput}
+                            placeholder="예: 삼성전자, 네이버, 카카오"
+                            multiline
+                            numberOfLines={2}
+                            className="bg-white px-3 py-2 rounded-lg text-gray-900"
+                            style={{ minHeight: 60, textAlignVertical: 'top' }}
+                          />
+                        </View>
+                      </View>
+
                       {/* Action Buttons */}
                       <View className="flex-row gap-2">
                         <Button
@@ -418,6 +503,9 @@ export default function HomeScreen() {
                             setUserNote('');
                             setTags([]);
                             setTagInput('');
+                            setTotalValue('');
+                            setStockCount('');
+                            setTopHoldingsInput('');
                           }}
                           fullWidth
                         />

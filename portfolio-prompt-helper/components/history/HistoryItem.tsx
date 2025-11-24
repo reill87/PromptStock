@@ -188,6 +188,26 @@ export const HistoryItem = memo(function HistoryItem({
             {truncatedNote}
           </Text>
 
+          {/* Portfolio Snapshot */}
+          {analysis.snapshot && (
+            <View className="flex-row items-center mt-2 p-2 bg-blue-50 rounded-lg">
+              {analysis.snapshot.totalValue && (
+                <View className="flex-row items-center mr-3">
+                  <Text className="text-sm font-bold text-blue-900">
+                    💰 {analysis.snapshot.totalValue.toLocaleString()}만원
+                  </Text>
+                </View>
+              )}
+              {analysis.snapshot.stockCount && (
+                <View className="flex-row items-center">
+                  <Text className="text-sm text-blue-700">
+                    📊 {analysis.snapshot.stockCount}종목
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
           {/* Bottom info */}
           <View className="flex-row items-center mt-3 pt-3 border-t border-gray-100">
             <Ionicons name="images-outline" size={14} color="#9CA3AF" />
